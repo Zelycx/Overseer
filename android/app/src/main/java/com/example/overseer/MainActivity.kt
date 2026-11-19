@@ -36,6 +36,11 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
 
+                R.id.nav_study -> {
+                    startActivity(Intent(this, StudyActivity::class.java))
+                    true
+                }
+
                 else -> false
             }
         }

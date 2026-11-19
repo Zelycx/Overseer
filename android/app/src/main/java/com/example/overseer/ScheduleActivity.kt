@@ -22,6 +22,9 @@ class ScheduleActivity : AppCompatActivity() {
         // Display the current date
         val scheduleDate = findViewById<TextView>(R.id.scheduleDate)
 
+        val selectedDayDescription =
+            findViewById<TextView>(R.id.selectedDayDescription)
+
         val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
 
         // Set up bottom navigation
@@ -39,6 +42,12 @@ class ScheduleActivity : AppCompatActivity() {
 
                 R.id.nav_schedule -> true
 
+                R.id.nav_study -> {
+                    startActivity(Intent(this, StudyActivity::class.java))
+                    finish()
+                    true
+                }
+
                 else -> false
             }
         }
@@ -50,37 +59,107 @@ class ScheduleActivity : AppCompatActivity() {
         // Store the currently selected date
         val calendar = Calendar.getInstance()
 
-        // Function to update the displayed date
-        fun updateDate() {
-            scheduleDate.text = dateFormat.format(calendar.time)
-                .uppercase(Locale.getDefault())
-        }
-
-        // Display the initial date
-        updateDate()
-
         // Get the class cards and empty-day message
         val databaseClassCard = findViewById<View>(R.id.databaseClassCard)
         val programmingClassCard = findViewById<View>(R.id.programmingClassCard)
         val noClassesMessage = findViewById<TextView>(R.id.noClassesMessage)
 
+        val databaseClassName = findViewById<TextView>(R.id.databaseClassName)
+        val databaseClassTime = findViewById<TextView>(R.id.databaseClassTime)
+        val databaseClassLocation = findViewById<TextView>(R.id.databaseClassLocation)
+
+        val programmingClassName = findViewById<TextView>(R.id.programmingClassName)
+        val programmingClassTime = findViewById<TextView>(R.id.programmingClassTime)
+        val programmingClassLocation = findViewById<TextView>(R.id.programmingClassLocation)
+
+        // Function to update the displayed date
+        fun updateDate() {
+
+            // Update the displayed date
+            scheduleDate.text = dateFormat.format(calendar.time)
+                .uppercase(Locale.getDefault())
+
+            // Compare selected date with today
+            val today = Calendar.getInstance()
+
+            val selectedDate = calendar.clone() as Calendar
+
+            val isToday =
+                today.get(Calendar.YEAR) == selectedDate.get(Calendar.YEAR) &&
+                        today.get(Calendar.DAY_OF_YEAR) == selectedDate.get(Calendar.DAY_OF_YEAR)
+
+            val tomorrow = Calendar.getInstance()
+            tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+
+            val isTomorrow =
+                tomorrow.get(Calendar.YEAR) == selectedDate.get(Calendar.YEAR) &&
+                        tomorrow.get(Calendar.DAY_OF_YEAR) == selectedDate.get(Calendar.DAY_OF_YEAR)
+
+            selectedDayDescription.text = when {
+                isToday -> "Your schedule for today."
+                isTomorrow -> "Your schedule for tomorrow."
+                else -> "Your schedule for this day."
+            }
+        }
+
         // Check whether the selected date is today
         fun updateClasses() {
 
-            val today = Calendar.getInstance()
+            val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
 
-            val isToday =
-                calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                        calendar.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+            when (dayOfWeek) {
 
-            if (isToday) {
-                databaseClassCard.visibility = View.VISIBLE
-                programmingClassCard.visibility = View.VISIBLE
-                noClassesMessage.visibility = View.GONE
-            } else {
-                databaseClassCard.visibility = View.GONE
-                programmingClassCard.visibility = View.GONE
-                noClassesMessage.visibility = View.VISIBLE
+                Calendar.MONDAY -> {
+                    databaseClassCard.visibility = View.VISIBLE
+                    programmingClassCard.visibility = View.GONE
+                    noClassesMessage.visibility = View.GONE
+
+                    databaseClassName.text = "Database Management"
+                    databaseClassTime.text = "10:00 AM - 11:30 AM"
+                    databaseClassLocation.text = "Room 204"
+                }
+
+                Calendar.TUESDAY -> {
+                    databaseClassCard.visibility = View.GONE
+                    programmingClassCard.visibility = View.VISIBLE
+                    noClassesMessage.visibility = View.GONE
+
+                    programmingClassName.text = "Programming"
+                    programmingClassTime.text = "1:00 PM - 2:30 PM"
+                    programmingClassLocation.text = "Room 301"
+                }
+
+                Calendar.WEDNESDAY -> {
+                    databaseClassCard.visibility = View.GONE
+                    programmingClassCard.visibility = View.GONE
+                    noClassesMessage.visibility = View.VISIBLE
+                }
+
+                Calendar.THURSDAY -> {
+                    databaseClassCard.visibility = View.VISIBLE
+                    programmingClassCard.visibility = View.VISIBLE
+                    noClassesMessage.visibility = View.GONE
+
+                    databaseClassName.text = "Database Management"
+                    databaseClassTime.text = "10:00 AM - 11:30 AM"
+                    databaseClassLocation.text = "Room 204"
+
+                    programmingClassName.text = "Programming"
+                    programmingClassTime.text = "1:00 PM - 2:30 PM"
+                    programmingClassLocation.text = "Room 301"
+                }
+
+                Calendar.FRIDAY -> {
+                    databaseClassCard.visibility = View.GONE
+                    programmingClassCard.visibility = View.GONE
+                    noClassesMessage.visibility = View.VISIBLE
+                }
+
+                else -> {
+                    databaseClassCard.visibility = View.GONE
+                    programmingClassCard.visibility = View.GONE
+                    noClassesMessage.visibility = View.VISIBLE
+                }
             }
         }
 
