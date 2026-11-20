@@ -32,6 +32,7 @@ class ScheduleActivity : AppCompatActivity() {
 
         bottomNavigation.selectedItemId = R.id.nav_schedule
 
+
         bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
@@ -48,9 +49,22 @@ class ScheduleActivity : AppCompatActivity() {
                     true
                 }
 
+                R.id.nav_focus -> {
+                    startActivity(Intent(this, FocusActivity::class.java))
+                    finish()
+                    true
+                }
+
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, ProfileActivity::class.java))
+                    finish()
+                    true
+                }
+
                 else -> false
             }
         }
+
 
         // Get the arrow buttons
         val previousDayButton = findViewById<Button>(R.id.previousDayButton)

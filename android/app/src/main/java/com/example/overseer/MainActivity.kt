@@ -41,6 +41,17 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
 
+                R.id.nav_focus -> {
+                    startActivity(Intent(this, FocusActivity::class.java))
+                    true
+                }
+
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, ProfileActivity::class.java))
+                    finish()
+                    true
+                }
+
                 else -> false
             }
         }

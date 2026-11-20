@@ -36,6 +36,7 @@ class StudyActivity : AppCompatActivity() {
 
         bottomNavigation.selectedItemId = R.id.nav_study
 
+
         bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
 
@@ -53,9 +54,22 @@ class StudyActivity : AppCompatActivity() {
 
                 R.id.nav_study -> true
 
+                R.id.nav_focus -> {
+                    startActivity(Intent(this, FocusActivity::class.java))
+                    finish()
+                    true
+                }
+
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, ProfileActivity::class.java))
+                    finish()
+                    true
+                }
+
                 else -> false
             }
         }
+
 
         val addSubjectButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.addSubjectButton)
         val addedSubjectsContainer = findViewById<LinearLayout>(R.id.addedSubjectsContainer)
