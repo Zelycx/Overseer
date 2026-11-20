@@ -93,7 +93,6 @@
 .dashboard-footer-callout span { color: #7b8393; font-size: 8px; }
 .dashboard-footer-callout > a { display: grid; place-items: center; width: 29px; height: 29px; margin-left: auto; color: #67724a; border-radius: 8px; background: #fff; }
 .dashboard-footer-callout > a:hover { color: var(--navy); }
-.preview-disclaimer { margin: -14px 0 0; color: #9298a9; font-size: 8px; text-align: center; }
 
 @media (max-width: 1120px) {
   .dashboard-grid--top { grid-template-columns: minmax(0, 1.4fr) minmax(220px, .8fr); }
@@ -127,7 +126,6 @@
   .day-plan-card__bottom > .button { margin-left: auto; }
   .dashboard-footer-callout { align-items: flex-start; }
   .dashboard-footer-callout span { line-height: 1.5; }
-  .preview-disclaimer { line-height: 1.6; }
 }
 
 @media (max-width: 410px) {

@@ -2,6 +2,7 @@ import { BookOpen, Menu, Sparkles, Wifi, WifiOff, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { pageDetails } from '../../app/navigation'
+import { useAppData } from '../../app/AppDataContext'
 
 type AppHeaderProps = {
   onMenuClick: () => void
@@ -26,6 +27,7 @@ function useOnlineStatus() {
 
 export default function AppHeader({ onMenuClick, menuOpen }: AppHeaderProps) {
   const { pathname } = useLocation()
+  const { data } = useAppData()
   const online = useOnlineStatus()
   const detail = pageDetails[pathname] ?? (pathname.startsWith('/courses/')
     ? { title: 'Course details', eyebrow: 'Your study library' }
@@ -59,8 +61,8 @@ export default function AppHeader({ onMenuClick, menuOpen }: AppHeaderProps) {
         <span className="ai-status"><Sparkles size={14} aria-hidden="true" /><span>AI not configured</span></span>
         <Link className="icon-button header-search" to="/library" aria-label="Open study library"><BookOpen size={18} /></Link>
         <Link to="/settings" className="profile-button" aria-label="Open settings">
-          <span className="profile-avatar">MC</span>
-          <span className="profile-name">Maya Chen</span>
+          <span className="profile-avatar">{(data.preferences.displayName || 'S').trim().slice(0, 2).toUpperCase()}</span>
+          <span className="profile-name">{data.preferences.displayName || 'Student'}</span>
         </Link>
       </div>
     </header>

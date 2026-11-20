@@ -3,6 +3,7 @@
 @import './layout.css';
 @import './landing.css';
 @import './dashboard.css';
+@import './workspace.css';
 
 * { box-sizing: border-box; }
 html { min-width: 320px; scroll-behavior: smooth; }

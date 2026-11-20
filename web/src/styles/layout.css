@@ -27,8 +27,6 @@
 .sidebar-tip__icon { display: grid; place-items: center; flex: 0 0 auto; width: 25px; height: 25px; color: var(--navy); border-radius: 8px; background: var(--lime); font-size: 14px; }
 .sidebar-tip p { margin: 0; color: #aeb7ce; font-size: 10px; line-height: 1.65; }
 .sidebar-tip strong { color: white; font-size: 10px; font-weight: 630; }
-.sidebar-help { display: flex; justify-content: space-between; padding: 7px 9px; color: #aeb7ce; font-size: 10px; }
-.sidebar-help:hover { color: white; }
 .sidebar-version { padding: 9px; margin: 0; color: #737f9f; font-size: 8px; letter-spacing: .12em; }
 .app-main { min-height: 100vh; margin-left: 246px; }
 .app-header { position: sticky; z-index: 20; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: 76px; padding: 0 37px; border-bottom: 1px solid #edebf0; background: rgb(253 248 255 / 95%); backdrop-filter: blur(14px); }
@@ -56,8 +54,6 @@
 .placeholder-page h2 { margin: 0; font-size: clamp(25px, 3vw, 34px); letter-spacing: -.055em; }
 .placeholder-page > p:not(.eyebrow) { max-width: 500px; margin: 13px 0 23px; color: var(--muted-strong); font-size: 14px; line-height: 1.8; }
 .placeholder-page code { padding: 3px 6px; border-radius: 5px; background: #efedf4; font-size: 12px; }
-.placeholder-status { display: flex; align-items: center; gap: 11px; padding: 13px 15px; margin: 0 0 22px; color: #66708a; box-shadow: none; font-size: 11px; line-height: 1.6; }
-.placeholder-status__dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #d2a63a; }
 .text-link { display: inline-flex; align-items: center; gap: 7px; color: #515d7e; font-size: 10px; font-weight: 650; white-space: nowrap; }
 .text-link:hover { color: var(--navy); }
 .auth-page { display: flex; flex-direction: column; min-height: 100vh; padding: 24px clamp(20px, 5vw, 72px); background: radial-gradient(ellipse at 52% 47%, #fff 0, #fdf8ff 48%, #f2f0f8 100%); }

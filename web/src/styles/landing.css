@@ -17,6 +17,7 @@
 .landing-preview-link svg { color: var(--navy); }
 .landing-preview-link:hover { color: var(--navy); }
 .landing-proof { display: flex; align-items: center; gap: 10px; margin-top: 37px; color: #82899c; font-size: 9px; }
+.landing-proof__mark { display: grid; place-items: center; width: 24px; height: 24px; color: #64771a; border-radius: 8px; background: #edf5d5; }
 .landing-proof__avatars { display: flex; padding-left: 2px; }
 .landing-proof__avatars i { display: grid; place-items: center; width: 22px; height: 22px; margin-left: -3px; color: var(--navy); border: 2px solid var(--base); border-radius: 50%; background: #e3d0c0; font-size: 8px; font-style: normal; font-weight: 700; }
 .landing-proof__avatars i:nth-child(2) { background: #cbd9dd; }
@@ -50,7 +51,9 @@
 .preview-agenda { margin-top: 19px; }
 .preview-agenda__heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
 .preview-agenda__heading b { font-size: 10px; }
-.preview-agenda__heading span { display: inline-flex; align-items: center; gap: 3px; color: #828aa0; font-size: 7px; }
+.preview-agenda__heading a { display: inline-flex; align-items: center; gap: 3px; color: #828aa0; font-size: 7px; }
+.preview-agenda__heading a:hover { color: var(--navy); }
+.preview-empty-line { padding: 14px 0; color: #9299aa; border-bottom: 1px solid #f0eef3; font-size: 8px; }
 .preview-event { display: flex; align-items: center; gap: 10px; min-height: 48px; border-bottom: 1px solid #f0eef3; }
 .preview-event__line { width: 3px; height: 29px; border-radius: 5px; background: var(--navy); }
 .preview-event--lime .preview-event__line { background: #a8d500; }

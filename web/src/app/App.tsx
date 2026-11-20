@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell'
-import AuthPage from '../pages/AuthPage'
 import DashboardPage from '../pages/DashboardPage'
 import LandingPage from '../pages/LandingPage'
 import WorkspacePage from '../pages/WorkspacePage'
@@ -9,7 +8,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/auth" element={<Navigate to="/dashboard" replace />} />
       <Route element={<AppShell />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/schedule" element={<WorkspacePage page="schedule" />} />

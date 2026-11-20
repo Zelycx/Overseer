@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import AppHeader from './AppHeader'
 import AppSidebar from './AppSidebar'
+import { useAppData } from '../../app/AppDataContext'
 
 export default function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { storageError } = useAppData()
 
   return (
     <div className="app-shell">
@@ -12,6 +14,7 @@ export default function AppShell() {
       <AppSidebar open={menuOpen} onNavigate={() => setMenuOpen(false)} />
       <div className="app-main">
         <AppHeader onMenuClick={() => setMenuOpen((open) => !open)} menuOpen={menuOpen} />
+        {storageError && <div className="storage-error-banner" role="alert">{storageError}</div>}
         <main className="page-content" id="main-content">
           <Outlet />
         </main>

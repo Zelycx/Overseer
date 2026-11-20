@@ -1,6 +1,7 @@
 import { GraduationCap } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { primaryNavigation, settingsNavigation, workspaceNavigation, type NavigationItem } from '../../app/navigation'
+import { useAppData } from '../../app/AppDataContext'
 
 type AppSidebarProps = {
   open: boolean
@@ -30,6 +31,7 @@ function NavigationGroup({ title, items, onNavigate }: { title: string; items: N
 }
 
 export default function AppSidebar({ open, onNavigate }: AppSidebarProps) {
+  const { data } = useAppData()
   return (
     <aside className={`sidebar${open ? ' sidebar--open' : ''}`} aria-label="Main navigation">
       <NavLink to="/dashboard" className="brand" onClick={onNavigate} aria-label="Overseer dashboard">
@@ -39,7 +41,7 @@ export default function AppSidebar({ open, onNavigate }: AppSidebarProps) {
 
       <div className="workspace-switcher">
         <span className="workspace-switcher__avatar"><GraduationCap size={17} aria-hidden="true" /></span>
-        <span className="workspace-switcher__copy"><strong>My workspace</strong><small>Personal</small></span>
+        <span className="workspace-switcher__copy"><strong>{data.preferences.displayName || 'My workspace'}</strong><small>Local workspace</small></span>
         <span className="workspace-switcher__dots" aria-hidden="true">···</span>
       </div>
 
@@ -52,8 +54,7 @@ export default function AppSidebar({ open, onNavigate }: AppSidebarProps) {
           <span className="sidebar-tip__icon"><span aria-hidden="true">✳</span></span>
           <p><strong>Small steps count.</strong><br />A little progress adds up.</p>
         </div>
-        <div className="sidebar-help"><span>Help & feedback</span></div>
-        <p className="sidebar-version">OVERSEER · PREVIEW</p>
+        <p className="sidebar-version">OVERSEER · LOCAL</p>
       </div>
     </aside>
   )
