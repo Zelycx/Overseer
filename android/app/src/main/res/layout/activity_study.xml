@@ -96,11 +96,13 @@
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/overseer_white"
-        app:menu="@menu/bottom_navigation_menu"
+        android:background="@android:color/white"
+        app:itemIconTint="@color/overseer_navy"
+        app:itemTextColor="@color/overseer_navy"
         app:labelVisibilityMode="labeled"
+        app:menu="@menu/bottom_navigation_menu"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

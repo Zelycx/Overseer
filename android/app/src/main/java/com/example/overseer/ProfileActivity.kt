@@ -80,7 +80,12 @@ class ProfileActivity : AppCompatActivity() {
         bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    startActivity(Intent(this, MainActivity::class.java))
+                    val intent = Intent(this, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    }
+
+                    startActivity(intent)
                     finish()
                     true
                 }
@@ -187,20 +192,22 @@ class ProfileActivity : AppCompatActivity() {
     }
 
 
+
     private fun showAboutDialog() {
         val message = """
         Overseer
 
         Your personal student productivity companion.
 
-        Organize your subjects, manage your schedule,
+        Organize your subjects and learning materials,
+        manage your class schedule and tasks,
         and stay focused on your academic goals.
 
         Version: 1.0
 
         Storage: Local / Offline
 
-        Built as a student hackathon project.
+        Made by Vengeance Studios
     """.trimIndent()
 
         androidx.appcompat.app.AlertDialog.Builder(this)
@@ -209,6 +216,7 @@ class ProfileActivity : AppCompatActivity() {
             .setPositiveButton("Got it", null)
             .show()
     }
+
 
 
 }

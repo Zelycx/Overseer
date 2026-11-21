@@ -63,7 +63,12 @@ class ScheduleActivity : AppCompatActivity() {
         bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    startActivity(Intent(this, MainActivity::class.java))
+                    val intent = Intent(this, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    }
+
+                    startActivity(intent)
                     finish()
                     true
                 }
@@ -237,91 +242,152 @@ class ScheduleActivity : AppCompatActivity() {
     }
 
     // Display classes for the selected day
+
     private fun displayClasses() {
         classesContainer.removeAllViews()
 
         val selectedDay = calendar.get(Calendar.DAY_OF_WEEK)
         val classes = loadClasses()
 
-        var classCount = 0
+        val dailyClasses = mutableListOf<JSONObject>()
 
+        // Collect classes for the selected day
         for (i in 0 until classes.length()) {
             val classItem = classes.getJSONObject(i)
 
             if (classItem.getInt("day") == selectedDay) {
-                addClassCard(classItem)
-                classCount++
+                dailyClasses.add(classItem)
             }
         }
 
+        // Sort classes by starting time
+        val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
+
+        dailyClasses.sortBy {
+            timeFormat.parse(it.optString("startTime"))?.time
+                ?: Long.MAX_VALUE
+        }
+
+        // Display sorted classes
+        for (classItem in dailyClasses) {
+            addClassCard(classItem)
+        }
+
         noClassesMessage.visibility =
-            if (classCount == 0) View.VISIBLE else View.GONE
+            if (dailyClasses.isEmpty()) View.VISIBLE else View.GONE
     }
 
+
     // Create a class card dynamically
+
     private fun addClassCard(classItem: JSONObject) {
+
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+
+        // Main card
         val card = MaterialCardView(this).apply {
-            radius = 20f
-            cardElevation = 0f
-            strokeWidth = 2
-            setStrokeColor(android.graphics.Color.parseColor("#777777"))
-            setCardBackgroundColor(getColor(R.color.overseer_white))
+            radius = dp(16).toFloat()
+            cardElevation = dp(3).toFloat()
+            strokeWidth = dp(1)
+            setStrokeColor(android.graphics.Color.parseColor("#E5E5E5"))
+            setCardBackgroundColor(
+                android.graphics.Color.WHITE
+            )
 
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
 
-            params.bottomMargin = 16
+            params.bottomMargin = dp(12)
             layoutParams = params
         }
 
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(24, 20, 24, 20)
+        // Horizontal card layout
+        val cardLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
         }
 
+        // Lime accent on the left
+        val accent = View(this).apply {
+            setBackgroundColor(
+                android.graphics.Color.parseColor("#C1FF00")
+            )
+        }
+
+        accent.layoutParams = LinearLayout.LayoutParams(
+            dp(5),
+            LinearLayout.LayoutParams.MATCH_PARENT
+        )
+
+        // Content container
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(16), dp(18), dp(16))
+        }
+
+        content.layoutParams = LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            1f
+        )
+
+        // Subject
         val subject = TextView(this).apply {
             text = classItem.getString("subject")
-            textSize = 18f
-            setTextColor(getColor(R.color.overseer_navy))
+            textSize = 17f
+            setTextColor(
+                android.graphics.Color.parseColor("#131D44")
+            )
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
+        // Time
         val time = TextView(this).apply {
             text = "${classItem.getString("startTime")} - ${classItem.getString("endTime")}"
             textSize = 14f
-            setTextColor(android.graphics.Color.parseColor("#777777"))
-            setPadding(0, 8, 0, 0)
+            setTextColor(
+                android.graphics.Color.parseColor("#777777")
+            )
+            setPadding(0, dp(7), 0, 0)
         }
 
+        // Room
         val room = TextView(this).apply {
             text = classItem.getString("room")
             textSize = 14f
-            setTextColor(android.graphics.Color.parseColor("#777777"))
-            setPadding(0, 4, 0, 0)
+            setTextColor(
+                android.graphics.Color.parseColor("#777777")
+            )
+            setPadding(0, dp(4), 0, 0)
         }
 
         content.addView(subject)
         content.addView(time)
         content.addView(room)
 
+        // Optional instructor
         val instructorName = classItem.optString("instructor", "")
 
         if (instructorName.isNotBlank()) {
             val instructor = TextView(this).apply {
                 text = "Instructor: $instructorName"
                 textSize = 14f
-                setTextColor(android.graphics.Color.parseColor("#777777"))
-                setPadding(0, 4, 0, 0)
+                setTextColor(
+                    android.graphics.Color.parseColor("#777777")
+                )
+                setPadding(0, dp(4), 0, 0)
             }
 
             content.addView(instructor)
         }
 
-        card.addView(content)
+        cardLayout.addView(accent)
+        cardLayout.addView(content)
+        card.addView(cardLayout)
 
-        // Long press to edit or delete
+        // Keep existing edit/delete functionality
         card.setOnLongClickListener {
             showClassOptions(classItem)
             true
@@ -329,6 +395,7 @@ class ScheduleActivity : AppCompatActivity() {
 
         classesContainer.addView(card)
     }
+
 
     // Add or edit a class
     private fun showClassDialog(existingClass: JSONObject? = null) {
@@ -439,6 +506,43 @@ class ScheduleActivity : AppCompatActivity() {
 
                 val startTime = startTimeInput.text.toString()
                 val endTime = endTimeInput.text.toString()
+
+                val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
+
+                val startDate = timeFormat.parse(startTime)
+                val endDate = timeFormat.parse(endTime)
+
+                if (startDate == null || endDate == null ||
+                    !endDate.after(startDate)
+                ) {
+                    endTimeInput.error = "End time must be later than start time"
+                    return@setOnClickListener
+                }
+
+
+                val selectedDay = daySpinner.selectedItemPosition + 1
+                val existingClasses = loadClasses()
+
+                val isDuplicate = (0 until existingClasses.length()).any { i ->
+                    val item = existingClasses.getJSONObject(i)
+
+                    val sameClass =
+                        item.getString("subject").equals(subject, ignoreCase = true) &&
+                                item.getInt("day") == selectedDay &&
+                                item.getString("startTime") == startTime &&
+                                item.getString("endTime") == endTime
+
+                    val isCurrentClass =
+                        isEditing && item.getString("id") == existingClass!!.getString("id")
+
+                    sameClass && !isCurrentClass
+                }
+
+                if (isDuplicate) {
+                    subjectInput.error = "This class already exists on that day and time"
+                    return@setOnClickListener
+                }
+
 
                 val updatedClass = createClassObject(
                     subject,
