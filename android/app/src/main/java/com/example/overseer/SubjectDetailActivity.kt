@@ -109,7 +109,123 @@ class SubjectDetailActivity : AppCompatActivity() {
         }
 
         card.addView(title)
+
+        card.setOnLongClickListener {
+            showMaterialOptions(materialName)
+            true
+        }
+
         container.addView(card)
+    }
+
+    private fun showMaterialOptions(materialName: String) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(materialName)
+            .setItems(arrayOf("Edit Material", "Delete Material")) { _, which ->
+                when (which) {
+                    0 -> showEditMaterialDialog(materialName)
+                    1 -> deleteMaterial(materialName)
+                }
+            }
+            .show()
+    }
+
+    private fun showEditMaterialDialog(oldMaterialName: String) {
+        val materialInput = EditText(this)
+        materialInput.setText(oldMaterialName)
+        materialInput.selectAll()
+        materialInput.hint = "Enter material title"
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Edit Material")
+            .setMessage("Change the name of your study material.")
+            .setView(materialInput)
+            .setPositiveButton("Save") { _, _ ->
+                val newMaterialName = materialInput.text.toString().trim()
+
+                if (newMaterialName.isNotEmpty() &&
+                    newMaterialName != oldMaterialName
+                ) {
+
+                    val sharedPreferences =
+                        getSharedPreferences("overseer_materials", MODE_PRIVATE)
+
+                    val savedMaterials =
+                        sharedPreferences.getString(
+                            "materials_${intent.getStringExtra("subject_name")}",
+                            "[]"
+                        )
+
+                    val materialArray = JSONArray(savedMaterials)
+
+                    for (i in 0 until materialArray.length()) {
+                        if (materialArray.getString(i) == oldMaterialName) {
+                            materialArray.put(i, newMaterialName)
+                            break
+                        }
+                    }
+
+                    val subjectName =
+                        intent.getStringExtra("subject_name") ?: "My Subject"
+
+                    sharedPreferences.edit()
+                        .putString(
+                            "materials_$subjectName",
+                            materialArray.toString()
+                        )
+                        .apply()
+
+                    Toast.makeText(
+                        this,
+                        "Material renamed to: $newMaterialName",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    recreate()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun deleteMaterial(materialName: String) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Delete Material")
+            .setMessage("Are you sure you want to delete \"$materialName\"?")
+            .setPositiveButton("Delete") { _, _ ->
+
+                val subjectName =
+                    intent.getStringExtra("subject_name") ?: "My Subject"
+
+                val sharedPreferences =
+                    getSharedPreferences("overseer_materials", MODE_PRIVATE)
+
+                val savedMaterials =
+                    sharedPreferences.getString("materials_$subjectName", "[]")
+
+                val materialArray = JSONArray(savedMaterials)
+
+                for (i in 0 until materialArray.length()) {
+                    if (materialArray.getString(i) == materialName) {
+                        materialArray.remove(i)
+                        break
+                    }
+                }
+
+                sharedPreferences.edit()
+                    .putString("materials_$subjectName", materialArray.toString())
+                    .apply()
+
+                Toast.makeText(
+                    this,
+                    "Material deleted: $materialName",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                recreate()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
 }
