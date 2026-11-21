@@ -1,2 +1,9 @@
 # Android Studio
-android/.idea/
+android/.idea/build/
+
+# iOS / Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
