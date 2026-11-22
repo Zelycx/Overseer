@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Phase 1A is infrastructure only. Keep every collection closed until
+    // the data ownership schema and corresponding tests are approved.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
