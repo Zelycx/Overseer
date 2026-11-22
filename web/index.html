@@ -3,12 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#fdf8ff" />
+    <meta name="theme-color" content="#f4f4ed" />
+    <script>
+      (() => {
+        try {
+          const preferences = JSON.parse(localStorage.getItem('overseer.local-data') || 'null')?.data?.preferences || {};
+          const presets = ['studio', 'midnight', 'paper', 'high-contrast'];
+          const accents = ['olive', 'blue', 'terracotta', 'violet', 'teal'];
+          const preset = presets.includes(preferences.appearancePreset)
+            ? preferences.appearancePreset
+            : preferences.theme === 'dark' ? 'midnight' : 'studio';
+          const mode = ['system', 'light', 'dark'].includes(preferences.appearanceMode)
+            ? preferences.appearanceMode
+            : preferences.theme === 'dark' ? 'dark' : 'light';
+          const dark = mode === 'dark' || (mode === 'system' && (preset === 'midnight' || window.matchMedia('(prefers-color-scheme: dark)').matches));
+          const root = document.documentElement;
+          root.dataset.theme = dark ? 'dark' : 'light';
+          root.dataset.preset = preset;
+          root.dataset.accent = accents.includes(preferences.accentColor) ? preferences.accentColor : 'olive';
+          root.dataset.density = preferences.density === 'compact' ? 'compact' : 'comfortable';
+          root.dataset.reducedMotion = String(preferences.reducedMotion === true);
+          root.style.colorScheme = dark ? 'dark' : 'light';
+        } catch {
+          document.documentElement.dataset.theme = 'light';
+          document.documentElement.dataset.preset = 'studio';
+          document.documentElement.dataset.accent = 'olive';
+          document.documentElement.dataset.density = 'comfortable';
+        }
+      })();
+    </script>
     <meta
       name="description"
-      content="Overseer helps you bring your study time, lessons, and tasks under control."
+      content="A local study workspace for schedules, coursework, tasks, focus sessions, and progress."
     />
-    <title>Overseer — Your time. Your lessons. Under control.</title>
+    <title>Overseer — Study workspace</title>
   </head>
   <body>
     <div id="root"></div>

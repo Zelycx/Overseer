@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
 import type { AppData, FocusSession, FocusTimer } from '../types/app'
 import { createEmptyData, createId, loadAppData, saveAppData } from '../data/storage'
 
@@ -46,6 +46,32 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try { saveAppData(data); setStorageError(null) } catch (error) { console.error('Unable to save local Overseer data', error); setStorageError('Overseer could not save changes in this browser. Export a backup and free local storage space, then try again.') }
   }, [data])
+
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)')
+    const applyAppearance = () => {
+      const dark = data.preferences.appearanceMode === 'dark'
+        || (data.preferences.appearanceMode === 'system' && (systemDark.matches || data.preferences.appearancePreset === 'midnight'))
+      root.dataset.theme = dark ? 'dark' : 'light'
+      root.dataset.preset = data.preferences.appearancePreset
+      root.dataset.accent = data.preferences.accentColor
+      root.dataset.density = data.preferences.density
+      root.dataset.reducedMotion = String(data.preferences.reducedMotion)
+      root.style.colorScheme = dark ? 'dark' : 'light'
+      const background = getComputedStyle(root).getPropertyValue('--background').trim()
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background || (dark ? '#101921' : '#f5f4ed'))
+    }
+    applyAppearance()
+    systemDark.addEventListener('change', applyAppearance)
+    return () => systemDark.removeEventListener('change', applyAppearance)
+  }, [
+    data.preferences.appearanceMode,
+    data.preferences.appearancePreset,
+    data.preferences.accentColor,
+    data.preferences.density,
+    data.preferences.reducedMotion,
+  ])
 
   useEffect(() => {
     if (data.focusTimer.status === 'running' && data.focusTimer.endsAt !== null && data.focusTimer.endsAt <= Date.now()) {

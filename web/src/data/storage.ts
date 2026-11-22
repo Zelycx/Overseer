@@ -2,7 +2,7 @@ import type { AppData, PersistedAppData } from '../types/app'
 import { localDateKey } from './dates'
 
 export const STORAGE_KEY = 'overseer.local-data'
-export const STORAGE_VERSION = 2
+export const STORAGE_VERSION = 4
 
 function validDateKey(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
@@ -22,7 +22,11 @@ export function createId(prefix = 'item'): string {
 
 export function createEmptyData(): AppData {
   return {
-    preferences: { displayName: 'Student', timeFormat: '12h', firstDayOfWeek: 1 },
+    preferences: {
+      displayName: '', timeFormat: '12h', firstDayOfWeek: 1, theme: 'light',
+      appearancePreset: 'studio', appearanceMode: 'system', accentColor: 'olive', density: 'comfortable',
+      reducedMotion: false, sidebarCollapsed: false,
+    },
     courses: [], lessons: [], materials: [], tasks: [], events: [], plannerBlocks: [], focusSessions: [],
     focusTimer: { status: 'idle', mode: 'focus', durationSeconds: 25 * 60, remainingSeconds: 25 * 60, startedAt: null, segmentStartedAt: null, elapsedSeconds: 0, endsAt: null, courseId: null, taskId: null },
   }
@@ -32,7 +36,6 @@ export function createSeedData(now = new Date()): AppData {
   const data = createEmptyData()
   const stamp = now.toISOString()
   const date = localDateKey(now)
-  data.preferences.displayName = 'Alex'
   const courses = [
     { id: 'course-structures', name: 'Data Structures', code: 'CS 204', description: 'Core data structures, algorithms, and practical analysis.', instructor: 'Prof. Rivera', tint: 'lavender' as const },
     { id: 'course-math', name: 'Discrete Mathematics', code: 'MATH 221', description: 'Logic, graphs, counting, and proofs.', instructor: 'Dr. Chen', tint: 'mint' as const },
@@ -87,8 +90,29 @@ export function validateAppData(value: unknown): value is AppData {
 }
 
 function migrateAppData(value: AppData): AppData {
+  const legacyTheme = value.preferences.theme === 'dark' ? 'dark' : 'light'
+  const preset = ['studio', 'midnight', 'paper', 'high-contrast'].includes(value.preferences.appearancePreset)
+    ? value.preferences.appearancePreset
+    : legacyTheme === 'dark' ? 'midnight' : 'studio'
+  const appearanceMode = ['system', 'light', 'dark'].includes(value.preferences.appearanceMode)
+    ? value.preferences.appearanceMode
+    : legacyTheme
+  const accentColor = ['olive', 'blue', 'terracotta', 'violet', 'teal'].includes(value.preferences.accentColor)
+    ? value.preferences.accentColor
+    : 'olive'
+  const density = value.preferences.density === 'compact' ? 'compact' : 'comfortable'
   return {
     ...value,
+    preferences: {
+      ...value.preferences,
+      theme: legacyTheme,
+      appearancePreset: preset,
+      appearanceMode,
+      accentColor,
+      density,
+      reducedMotion: typeof value.preferences.reducedMotion === 'boolean' ? value.preferences.reducedMotion : false,
+      sidebarCollapsed: typeof value.preferences.sidebarCollapsed === 'boolean' ? value.preferences.sidebarCollapsed : false,
+    },
     focusTimer: {
       ...value.focusTimer,
       segmentStartedAt: value.focusTimer.segmentStartedAt ?? value.focusTimer.startedAt ?? null,
@@ -107,7 +131,7 @@ export function loadAppData(): AppData {
   if (raw === null) return createSeedData()
   try {
     const parsed = JSON.parse(raw) as Partial<PersistedAppData>
-    if ((parsed.version === STORAGE_VERSION || parsed.version === 1) && validateAppData(parsed.data)) return migrateAppData(parsed.data)
+    if (Number.isInteger(parsed.version) && parsed.version! >= 1 && parsed.version! <= STORAGE_VERSION && validateAppData(parsed.data)) return migrateAppData(parsed.data)
   } catch {
     // Preserve an unusable record below before starting a clean workspace.
   }
@@ -123,7 +147,8 @@ export function saveAppData(data: AppData): void {
 export function parseImportData(text: string): AppData {
   const parsed: unknown = JSON.parse(text)
   const maybeEnvelope = parsed as Partial<PersistedAppData>
-  const data = maybeEnvelope && (maybeEnvelope.version === STORAGE_VERSION || maybeEnvelope.version === 1) ? maybeEnvelope.data : parsed
+  const isSupportedEnvelope = maybeEnvelope && Number.isInteger(maybeEnvelope.version) && maybeEnvelope.version! >= 1 && maybeEnvelope.version! <= STORAGE_VERSION
+  const data = isSupportedEnvelope ? maybeEnvelope.data : parsed
   if (!validateAppData(data)) throw new Error('This file is not a valid Overseer data export.')
   return migrateAppData(data)
 }

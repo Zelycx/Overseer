@@ -1,0 +1,74 @@
+/* Shared interaction and motion behavior for every app route. */
+.route-transition > *,
+.dashboard-page > *,
+.workspace-page > * {
+  animation-duration: var(--duration-enter);
+  animation-timing-function: var(--ease-enter);
+}
+
+.dashboard-page > :nth-child(2), .workspace-page > :nth-child(2) { animation-delay: var(--duration-stagger); }
+.dashboard-page > :nth-child(3), .workspace-page > :nth-child(3) { animation-delay: calc(var(--duration-stagger) * 2); }
+.dashboard-page > :nth-child(4), .workspace-page > :nth-child(4) { animation-delay: calc(var(--duration-stagger) * 3); }
+.dashboard-page > :nth-child(5), .workspace-page > :nth-child(5) { animation-delay: calc(var(--duration-stagger) * 4); }
+.dashboard-page > :nth-child(n+6), .workspace-page > :nth-child(n+6) { animation-delay: calc(var(--duration-stagger) * 4); }
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--text-primary) 7%, transparent);
+  }
+
+  .schedule-event-row:hover, .planner-row:hover, .history-row:hover, .activity-row:hover {
+    background-color: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+  }
+
+  .schedule-event-row:hover { transform: translateX(3px); }
+}
+
+.card { transition: transform var(--duration-normal) var(--ease-standard), border-color var(--duration-normal) var(--ease-standard), box-shadow var(--duration-normal) var(--ease-standard), background-color var(--duration-normal) var(--ease-standard); }
+.button, button, a, input, select, textarea { transition-timing-function: var(--ease-standard); }
+button:not(:disabled):active:not(.task-check-button), [data-slot='button']:active, [data-slot='alert-dialog-action']:active, [data-slot='alert-dialog-cancel']:active { transform: scale(.98); }
+.button:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { transition: outline-offset var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard); }
+
+.form-field > input, .form-field > select, .form-field > textarea, .filter-row select, .search-field, .date-input-label input {
+  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
+}
+
+.progress-bar span { transition: width 520ms var(--ease-emphasized); }
+.task-check-button { transition: color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard); }
+.managed-task, .schedule-event-row, .planner-row, .history-row, .activity-row, .library-course, .material-card, .lesson-row {
+  animation: list-row-enter var(--duration-enter) var(--ease-enter) both;
+}
+.managed-task:nth-child(2), .schedule-event-row:nth-child(2), .planner-row:nth-child(2), .history-row:nth-child(2), .activity-row:nth-child(2), .library-course:nth-child(2), .material-card:nth-child(2), .lesson-row:nth-child(2) { animation-delay: var(--duration-stagger); }
+.managed-task:nth-child(3), .schedule-event-row:nth-child(3), .planner-row:nth-child(3), .history-row:nth-child(3), .activity-row:nth-child(3), .library-course:nth-child(3), .material-card:nth-child(3), .lesson-row:nth-child(3) { animation-delay: calc(var(--duration-stagger) * 2); }
+.managed-task:nth-child(4), .schedule-event-row:nth-child(4), .planner-row:nth-child(4), .history-row:nth-child(4), .activity-row:nth-child(4), .library-course:nth-child(4), .material-card:nth-child(4), .lesson-row:nth-child(4) { animation-delay: calc(var(--duration-stagger) * 3); }
+
+.managed-task--complete .managed-task__main > strong, .planner-row--complete .planner-row__copy strong { transition: color var(--duration-normal) var(--ease-standard), opacity var(--duration-normal) var(--ease-standard); }
+.managed-task--complete .task-check-button, .task-check--done { color: var(--accent-foreground); border-color: var(--accent-color); background: var(--accent-soft); }
+
+@keyframes list-row-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+:root[data-reduced-motion='true'] *,
+:root[data-reduced-motion='true'] *::before,
+:root[data-reduced-motion='true'] *::after {
+  scroll-behavior: auto !important;
+  animation-duration: .01ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+  transition-delay: 0ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

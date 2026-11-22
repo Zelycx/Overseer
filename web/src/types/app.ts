@@ -3,11 +3,24 @@ export type EventType = 'class' | 'study' | 'personal' | 'other'
 export type EventColor = 'navy' | 'lime' | 'blue' | 'amber'
 export type FocusMode = 'focus' | 'shortBreak' | 'longBreak'
 export type TimerStatus = 'idle' | 'running' | 'paused'
+export type Theme = 'light' | 'dark'
+export type AppearancePreset = 'studio' | 'midnight' | 'paper' | 'high-contrast'
+export type AppearanceMode = 'system' | 'light' | 'dark'
+export type AccentColor = 'olive' | 'blue' | 'terracotta' | 'violet' | 'teal'
+export type LayoutDensity = 'comfortable' | 'compact'
 
 export interface UserPreferences {
   displayName: string
   timeFormat: '12h' | '24h'
   firstDayOfWeek: 0 | 1
+  /** Retained for compatibility with local records written before the appearance system. */
+  theme: Theme
+  appearancePreset: AppearancePreset
+  appearanceMode: AppearanceMode
+  accentColor: AccentColor
+  density: LayoutDensity
+  reducedMotion: boolean
+  sidebarCollapsed: boolean
 }
 
 export interface Course {
