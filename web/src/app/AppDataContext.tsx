@@ -60,7 +60,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       root.dataset.reducedMotion = String(data.preferences.reducedMotion)
       root.style.colorScheme = dark ? 'dark' : 'light'
       const background = getComputedStyle(root).getPropertyValue('--background').trim()
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background || (dark ? '#101921' : '#f5f4ed'))
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background || (dark ? '#101921' : '#fdf8ff'))
     }
     applyAppearance()
     systemDark.addEventListener('change', applyAppearance)

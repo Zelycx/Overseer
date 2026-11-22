@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="overseer_navy">#EAF0FF</color>
+    <color name="overseer_white">#101521</color>
+    <color name="overseer_lime">#C1FF00</color>
+    <color name="overseer_brand_navy">#131D44</color>
+    <color name="overseer_on_brand">#FDF8FF</color>
+    <color name="overseer_surface">#1B2333</color>
+    <color name="overseer_muted">#B4BED3</color>
+    <color name="overseer_border">#374157</color>
+    <color name="overseer_subtle">#293348</color>
+</resources>

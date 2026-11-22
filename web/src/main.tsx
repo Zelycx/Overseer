@@ -5,7 +5,6 @@ import { MotionConfig } from 'motion/react'
 import App from './app/App'
 import { AppDataProvider } from './app/AppDataContext'
 import { useAppData } from './app/AppDataContext'
-import '@fontsource-variable/manrope'
 import './styles/global.css'
 
 function MotionPreferences({ children }: { children: React.ReactNode }) {

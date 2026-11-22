@@ -12,6 +12,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import java.time.Instant
+import java.util.UUID
+import java.nio.charset.StandardCharsets
 
 class FocusActivity : AppCompatActivity() {
 
@@ -20,6 +23,8 @@ class FocusActivity : AppCompatActivity() {
     private var timeLeftInMillis = selectedDurationMinutes * 60_000L
     private var isRunning = false
     private var endTimeInMillis = 0L
+    private var sessionMode = "focus"
+    private var sessionStartedAt: String? = null
     private val focusPrefs by lazy {
         getSharedPreferences("overseer_focus", MODE_PRIVATE)
     }
@@ -43,6 +48,7 @@ class FocusActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_focus)
+        WorkspaceRepository.load(this)
 
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -55,6 +61,9 @@ class FocusActivity : AppCompatActivity() {
         }
 
         restoreFocusState()
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.focusOptionsButton).setOnClickListener {
+            startActivity(Intent(this, FocusOptionsActivity::class.java))
+        }
 
         val startFocusButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton)
 
@@ -77,8 +86,7 @@ class FocusActivity : AppCompatActivity() {
                 startTimer()
                 startFocusButton.text = "Pause"
 
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Stay focused. You've got this!"
+                findViewById<android.widget.TextView>(R.id.focusStatus).text = modeMessage()
             }
 
         }
@@ -219,6 +227,7 @@ class FocusActivity : AppCompatActivity() {
             timeLeftInMillis = selectedDurationMinutes * 60_000L
             isRunning = false
             endTimeInMillis = 0L
+            sessionStartedAt = null
             saveFocusState()
 
             findViewById<android.widget.TextView>(R.id.timerText).text =
@@ -296,16 +305,40 @@ class FocusActivity : AppCompatActivity() {
 
     }
 
-    private fun startTimer() {
+    override fun onResume() {
+        super.onResume()
+        if (!isRunning && timerReady) {
+            val timer = WorkspaceRepository.load(this).focusTimer
+            selectedDurationMinutes = (timer.durationSeconds / 60).coerceIn(1, 180)
+            timeLeftInMillis = timer.remainingSeconds.coerceAtLeast(0) * 1000L
+            sessionMode = timer.mode
+            sessionStartedAt = timer.startedAt
+            updateTimerText()
+            findViewById<android.widget.TextView>(R.id.currentTaskText).text = WorkspaceRepository.load(this).tasks.firstOrNull { it.id == timer.taskId }?.title ?: "Ready to focus? Tap session details to link a task."
+            findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text = when (timer.status) { "paused" -> "Resume"; else -> if (sessionMode == "focus") "Start Focus" else "Start Break" }
+            findViewById<android.widget.TextView>(R.id.durationLabel).text = if (sessionMode == "focus") "FOCUS DURATION" else "BREAK DURATION"
+            if (timer.status == "idle") findViewById<android.widget.TextView>(R.id.focusStatus).text = if (sessionMode == "focus") "Ready to focus" else "Ready for a break"
+            mapOf(5 to R.id.duration5, 15 to R.id.duration15, 25 to R.id.duration25, 30 to R.id.duration30, 45 to R.id.duration45, 60 to R.id.duration60).forEach { (minutes, id) ->
+                findViewById<com.google.android.material.button.MaterialButton>(id).backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(if (minutes == selectedDurationMinutes) R.color.overseer_lime else android.R.color.darker_gray))
+            }
+            findViewById<com.google.android.material.button.MaterialButton>(R.id.durationCustom).backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(if (selectedDurationMinutes !in listOf(5, 15, 25, 30, 45, 60)) R.color.overseer_lime else android.R.color.darker_gray))
+        }
+    }
+    private var timerReady = false
 
+    private fun startTimer() {
+        val timerState = WorkspaceRepository.load(this).focusTimer
+        sessionMode = timerState.mode
+        if (sessionStartedAt == null || timeLeftInMillis >= selectedDurationMinutes * 60_000L) sessionStartedAt = Instant.now().toString()
         endTimeInMillis = System.currentTimeMillis() + timeLeftInMillis
+        isRunning = true
         FocusAlarmScheduler.schedule(this, endTimeInMillis)
 
         focusTimer = object : CountDownTimer(timeLeftInMillis, 1000) {
 
             override fun onTick(millisUntilFinished: Long) {
                 timeLeftInMillis = millisUntilFinished
-                saveFocusState()
+                saveFocusState(syncWorkspace = false)
 
                 val minutes = (millisUntilFinished / 1000) / 60
                 val seconds = (millisUntilFinished / 1000) % 60
@@ -319,43 +352,86 @@ class FocusActivity : AppCompatActivity() {
                 isRunning = false
 
                 endTimeInMillis = 0L
-                saveFocusState()
+                saveFocusState(syncWorkspace = false)
+                recordCompletedSession()
 
                 findViewById<android.widget.TextView>(R.id.timerText).text = "00:00"
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Focus session complete!"
+                findViewById<android.widget.TextView>(R.id.focusStatus).text = modeCompleteMessage()
 
                 findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text =
                     "Start Again"
             }
         }.start()
 
-        isRunning = true
         saveFocusState()
     }
 
-    private fun saveFocusState() {
+    private fun updateTimerText() {
+        val minutes = (timeLeftInMillis / 1000L) / 60
+        val seconds = (timeLeftInMillis / 1000L) % 60
+        findViewById<android.widget.TextView>(R.id.timerText).text = String.format("%02d:%02d", minutes, seconds)
+    }
+
+    private fun modeMessage() = when (sessionMode) {
+        "shortBreak" -> "Take a short break. You’ve earned it."
+        "longBreak" -> "Step away for a longer reset."
+        else -> "Stay focused. You’ve got this!"
+    }
+
+    private fun modeCompleteMessage() = when (sessionMode) {
+        "shortBreak" -> "Short break complete!"
+        "longBreak" -> "Long break complete!"
+        else -> "Focus session complete!"
+    }
+
+    private fun saveFocusState(syncWorkspace: Boolean = true) {
         focusPrefs.edit()
             .putBoolean("is_running", isRunning)
             .putLong("time_left", timeLeftInMillis)
             .putLong("end_time", endTimeInMillis)
             .putInt("focus_duration", selectedDurationMinutes)
             .apply()
+
+        if (syncWorkspace) {
+            val duration = selectedDurationMinutes * 60
+            val remaining = (timeLeftInMillis / 1000L).toInt().coerceAtLeast(0)
+            WorkspaceRepository.update(this) { data ->
+                val old = data.focusTimer
+                data.copy(focusTimer = old.copy(
+                    status = if (isRunning) "running" else if (remaining < duration) "paused" else "idle",
+                    mode = sessionMode, durationSeconds = duration, remainingSeconds = remaining,
+                    startedAt = if (isRunning || (sessionStartedAt != null && remaining < duration)) sessionStartedAt else null,
+                    segmentStartedAt = if (isRunning) Instant.now().toString() else null,
+                    elapsedSeconds = (duration - remaining).coerceAtLeast(0),
+                    endsAt = endTimeInMillis.takeIf { isRunning },
+                ))
+            }
+        }
+    }
+
+    private fun recordCompletedSession() {
+        val endedAt = Instant.now().toString()
+        WorkspaceRepository.update(this) { data ->
+            val timer = data.focusTimer
+            val startedAt = sessionStartedAt ?: timer.startedAt ?: endedAt
+            val duration = selectedDurationMinutes * 60
+            val stableId = "focus-${UUID.nameUUIDFromBytes(startedAt.toByteArray(StandardCharsets.UTF_8))}"
+            val session = WorkspaceFocusSession(stableId, sessionMode, startedAt, endedAt, duration, timer.courseId, timer.taskId, true)
+            val sessions = if (data.focusSessions.any { it.id == stableId }) data.focusSessions else data.focusSessions + session
+            data.copy(focusSessions = sessions, focusTimer = timer.copy(status = "idle", remainingSeconds = 0, elapsedSeconds = duration, endsAt = null, startedAt = null, segmentStartedAt = null))
+        }
+        sessionStartedAt = null
     }
 
     private fun restoreFocusState() {
-
-        selectedDurationMinutes = focusPrefs.getInt(
-            FOCUS_DURATION_KEY,
-            DEFAULT_FOCUS_DURATION
-        )
-
-        isRunning = focusPrefs.getBoolean("is_running", false)
-        timeLeftInMillis = focusPrefs.getLong(
-            "time_left",
-            selectedDurationMinutes * 60_000L
-        )
-        endTimeInMillis = focusPrefs.getLong("end_time", 0L)
+        val workspaceTimer = WorkspaceRepository.load(this).focusTimer
+        selectedDurationMinutes = if (workspaceTimer.durationSeconds > 0) (workspaceTimer.durationSeconds / 60).coerceIn(1, 180) else focusPrefs.getInt(FOCUS_DURATION_KEY, DEFAULT_FOCUS_DURATION)
+        sessionMode = workspaceTimer.mode
+        sessionStartedAt = workspaceTimer.startedAt
+        isRunning = workspaceTimer.status == "running" || focusPrefs.getBoolean("is_running", false)
+        timeLeftInMillis = if (workspaceTimer.durationSeconds > 0) workspaceTimer.remainingSeconds * 1000L else focusPrefs.getLong("time_left", selectedDurationMinutes * 60_000L)
+        endTimeInMillis = workspaceTimer.endsAt ?: focusPrefs.getLong("end_time", 0L)
+        timerReady = true
 
         if (isRunning) {
             // Calculate the actual remaining time
@@ -365,11 +441,11 @@ class FocusActivity : AppCompatActivity() {
                 timeLeftInMillis = 0L
                 isRunning = false
                 endTimeInMillis = 0L
-                saveFocusState()
+                saveFocusState(syncWorkspace = false)
+                recordCompletedSession()
 
                 findViewById<android.widget.TextView>(R.id.timerText).text = "00:00"
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Focus session complete!"
+                findViewById<android.widget.TextView>(R.id.focusStatus).text = modeCompleteMessage()
 
                 findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text =
                     "Start Again"
@@ -377,8 +453,7 @@ class FocusActivity : AppCompatActivity() {
                 findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text =
                     "Pause"
 
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Stay focused. You've got this!"
+                findViewById<android.widget.TextView>(R.id.focusStatus).text = modeMessage()
 
                 startTimer()
             }
@@ -390,11 +465,9 @@ class FocusActivity : AppCompatActivity() {
                 String.format("%02d:%02d", minutes, seconds)
 
             if (timeLeftInMillis < selectedDurationMinutes * 60_000L) {
-                findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text =
-                    "Resume"
+                findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text = "Resume"
 
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Session paused"
+                findViewById<android.widget.TextView>(R.id.focusStatus).text = "Session paused"
             }
         }
     }

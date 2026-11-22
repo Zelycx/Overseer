@@ -2,7 +2,7 @@ import type { AppData, PersistedAppData } from '../types/app'
 import { localDateKey } from './dates'
 
 export const STORAGE_KEY = 'overseer.local-data'
-export const STORAGE_VERSION = 4
+export const STORAGE_VERSION = 5
 
 function validDateKey(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
@@ -23,7 +23,7 @@ export function createId(prefix = 'item'): string {
 export function createEmptyData(): AppData {
   return {
     preferences: {
-      displayName: '', timeFormat: '12h', firstDayOfWeek: 1, theme: 'light',
+      displayName: '', profileEmail: '', timeFormat: '12h', firstDayOfWeek: 1, theme: 'light',
       appearancePreset: 'studio', appearanceMode: 'system', accentColor: 'olive', density: 'comfortable',
       reducedMotion: false, sidebarCollapsed: false,
     },
@@ -34,7 +34,9 @@ export function createEmptyData(): AppData {
 
 export function createSeedData(now = new Date()): AppData {
   const data = createEmptyData()
-  const stamp = now.toISOString()
+  // Keep seeded IDs identical across Android and Web so a first-time backup
+  // import recognizes the shared sample records instead of duplicating them.
+  const stamp = '2026-01-01T00:00:00.000Z'
   const date = localDateKey(now)
   const courses = [
     { id: 'course-structures', name: 'Data Structures', code: 'CS 204', description: 'Core data structures, algorithms, and practical analysis.', instructor: 'Prof. Rivera', tint: 'lavender' as const },
@@ -56,9 +58,9 @@ export function createSeedData(now = new Date()): AppData {
     { id: 'task-test-questions', title: 'Draft usability test questions', description: '', dueDate: null, dueTime: null, priority: 'Low', courseId: courses[2]!.id, completed: false, createdAt: stamp, completedAt: null },
   ]
   data.events = [
-    { id: 'event-math', title: 'Discrete Mathematics', description: 'Lecture', date, startTime: '09:00', endTime: '10:30', type: 'class', courseId: courses[1]!.id, location: 'Room 204', color: 'navy', createdAt: stamp },
-    { id: 'event-study', title: 'Study block', description: 'Review trees and traversals', date, startTime: '11:00', endTime: '12:00', type: 'study', courseId: courses[0]!.id, location: '', color: 'lime', createdAt: stamp },
-    { id: 'event-hci', title: 'Human-Computer Interaction', description: 'Studio class', date, startTime: '13:30', endTime: '15:00', type: 'class', courseId: courses[2]!.id, location: 'Design Lab', color: 'blue', createdAt: stamp },
+    { id: 'event-math', title: 'Discrete Mathematics', description: 'Lecture', date, repeatWeekly: false, startTime: '09:00', endTime: '10:30', type: 'class', courseId: courses[1]!.id, location: 'Room 204', color: 'navy', createdAt: stamp },
+    { id: 'event-study', title: 'Study block', description: 'Review trees and traversals', date, repeatWeekly: false, startTime: '11:00', endTime: '12:00', type: 'study', courseId: courses[0]!.id, location: '', color: 'lime', createdAt: stamp },
+    { id: 'event-hci', title: 'Human-Computer Interaction', description: 'Studio class', date, repeatWeekly: false, startTime: '13:30', endTime: '15:00', type: 'class', courseId: courses[2]!.id, location: 'Design Lab', color: 'blue', createdAt: stamp },
   ]
   return data
 }
@@ -77,7 +79,7 @@ export function validateAppData(value: unknown): value is AppData {
   if (!lessons.every((row) => hasStrings(row, ['courseId','title','description','content','updatedAt']) && typeof row.completed === 'boolean')) return false
   if (!materials.every((row) => hasStrings(row, ['title','content','fileName','createdAt','updatedAt']) && optionalId(row, 'courseId'))) return false
   if (!tasks.every((row) => hasStrings(row, ['title','description','createdAt']) && ['Low','Medium','High'].includes(String(row.priority)) && typeof row.completed === 'boolean' && optionalId(row, 'courseId') && optionalId(row, 'dueDate') && optionalId(row, 'dueTime') && optionalId(row, 'completedAt'))) return false
-  if (!events.every((row) => hasStrings(row, ['title','description','date','startTime','endTime','location','createdAt']) && ['class','study','personal','other'].includes(String(row.type)) && ['navy','lime','blue','amber'].includes(String(row.color)) && optionalId(row, 'courseId'))) return false
+  if (!events.every((row) => hasStrings(row, ['title','description','date','startTime','endTime','location','createdAt']) && (row.repeatWeekly === undefined || typeof row.repeatWeekly === 'boolean') && ['class','study','personal','other'].includes(String(row.type)) && ['navy','lime','blue','amber'].includes(String(row.color)) && optionalId(row, 'courseId'))) return false
   if (!blocks.every((row) => hasStrings(row, ['date','title','startTime','endTime','createdAt']) && typeof row.completed === 'boolean' && Number.isFinite(row.order) && optionalId(row, 'courseId') && optionalId(row, 'taskId'))) return false
   if (!sessions.every((row) => hasStrings(row, ['startedAt','endedAt']) && ['focus','shortBreak','longBreak'].includes(String(row.mode)) && Number.isFinite(row.durationSeconds) && optionalId(row, 'courseId') && optionalId(row, 'taskId') && typeof row.completed === 'boolean')) return false
   if (!tasks.every((row) => (row.dueDate === null || validDateKey(row.dueDate)) && (row.dueTime === null || validTime(row.dueTime)))) return false
@@ -105,6 +107,7 @@ function migrateAppData(value: AppData): AppData {
     ...value,
     preferences: {
       ...value.preferences,
+      profileEmail: typeof value.preferences.profileEmail === 'string' ? value.preferences.profileEmail : '',
       theme: legacyTheme,
       appearancePreset: preset,
       appearanceMode,
@@ -118,6 +121,7 @@ function migrateAppData(value: AppData): AppData {
       segmentStartedAt: value.focusTimer.segmentStartedAt ?? value.focusTimer.startedAt ?? null,
       elapsedSeconds: Number.isFinite(value.focusTimer.elapsedSeconds) ? value.focusTimer.elapsedSeconds : 0,
     },
+    events: value.events.map((event) => ({ ...event, repeatWeekly: event.repeatWeekly === true })),
   }
 }
 
@@ -151,4 +155,93 @@ export function parseImportData(text: string): AppData {
   const data = isSupportedEnvelope ? maybeEnvelope.data : parsed
   if (!validateAppData(data)) throw new Error('This file is not a valid Overseer data export.')
   return migrateAppData(data)
+}
+
+export type MergeSummary = { added: number; alreadyPresent: number; idConflicts: number }
+
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`).join(',')}}`
+  }
+  return JSON.stringify(value)
+}
+
+function stableImportedId(value: unknown): string {
+  const source = stableJson(value)
+  let hash = 2166136261
+  for (let index = 0; index < source.length; index += 1) hash = Math.imul(hash ^ source.charCodeAt(index), 16777619)
+  return `imported-${(hash >>> 0).toString(36)}`
+}
+
+/** Merge an imported workspace without replacing existing records or preferences. */
+export function mergeAppData(current: AppData, imported: AppData): { data: AppData; summary: MergeSummary } {
+  const merged: AppData = {
+    ...current,
+    courses: [...current.courses], lessons: [...current.lessons], materials: [...current.materials],
+    tasks: [...current.tasks], events: [...current.events], plannerBlocks: [...current.plannerBlocks],
+    focusSessions: [...current.focusSessions],
+  }
+  const summary: MergeSummary = { added: 0, alreadyPresent: 0, idConflicts: 0 }
+  const idMap = new Map<string, string>()
+  const usedIds = new Set([
+    ...merged.courses, ...merged.lessons, ...merged.materials, ...merged.tasks,
+    ...merged.events, ...merged.plannerBlocks, ...merged.focusSessions,
+  ].map((row) => row.id))
+
+  const mergeRows = <T extends { id: string }>(
+    key: 'courses' | 'lessons' | 'materials' | 'tasks' | 'events' | 'plannerBlocks' | 'focusSessions',
+    rows: T[],
+    rewrite: (row: T) => T,
+  ) => {
+    const target = merged[key] as unknown as T[]
+    for (const original of rows) {
+      const mapped = rewrite(original)
+      const sameId = target.find((row) => row.id === mapped.id)
+      if (!sameId && !usedIds.has(mapped.id)) {
+        idMap.set(original.id, original.id)
+        target.push(mapped)
+        usedIds.add(mapped.id)
+        summary.added += 1
+      } else if (stableJson(sameId) === stableJson(mapped)) {
+        idMap.set(original.id, original.id)
+        summary.alreadyPresent += 1
+      } else {
+        const baseId = stableImportedId(mapped)
+        let nextId = baseId
+        let suffix = 1
+        while (true) {
+          const importedCopy = target.find((row) => row.id === nextId)
+          if (importedCopy) {
+            if (stableJson(importedCopy) === stableJson({ ...mapped, id: nextId })) {
+              idMap.set(original.id, nextId)
+              summary.alreadyPresent += 1
+              break
+            }
+            nextId = `${baseId}-${suffix++}`
+            continue
+          }
+          if (usedIds.has(nextId)) { nextId = `${baseId}-${suffix++}`; continue }
+          idMap.set(original.id, nextId)
+          target.push({ ...mapped, id: nextId })
+          usedIds.add(nextId)
+          summary.added += 1
+          summary.idConflicts += 1
+          break
+        }
+      }
+    }
+  }
+
+  mergeRows('courses', imported.courses, (row) => ({ ...row }))
+  mergeRows('lessons', imported.lessons, (row) => ({ ...row, courseId: idMap.get(row.courseId) ?? row.courseId }))
+  mergeRows('materials', imported.materials, (row) => ({ ...row, courseId: row.courseId ? idMap.get(row.courseId) ?? row.courseId : null }))
+  mergeRows('tasks', imported.tasks, (row) => ({ ...row, courseId: row.courseId ? idMap.get(row.courseId) ?? row.courseId : null }))
+  mergeRows('events', imported.events, (row) => ({ ...row, repeatWeekly: row.repeatWeekly === true, courseId: row.courseId ? idMap.get(row.courseId) ?? row.courseId : null }))
+  mergeRows('plannerBlocks', imported.plannerBlocks, (row) => ({ ...row, courseId: row.courseId ? idMap.get(row.courseId) ?? row.courseId : null, taskId: row.taskId ? idMap.get(row.taskId) ?? row.taskId : null }))
+  mergeRows('focusSessions', imported.focusSessions, (row) => ({ ...row, courseId: row.courseId ? idMap.get(row.courseId) ?? row.courseId : null, taskId: row.taskId ? idMap.get(row.taskId) ?? row.taskId : null }))
+
+  // Local preferences and timer state are device-specific. Keep them intact on import.
+  return { data: merged, summary }
 }

@@ -11,6 +11,8 @@ export type LayoutDensity = 'comfortable' | 'compact'
 
 export interface UserPreferences {
   displayName: string
+  /** Android keeps this optional profile detail; Web preserves it during round trips. */
+  profileEmail?: string
   timeFormat: '12h' | '24h'
   firstDayOfWeek: 0 | 1
   /** Retained for compatibility with local records written before the appearance system. */
@@ -71,6 +73,8 @@ export interface ScheduleEvent {
   title: string
   description: string
   date: string
+  /** The event repeats on this weekday from `date` onward when true. */
+  repeatWeekly: boolean
   startTime: string
   endTime: string
   type: EventType

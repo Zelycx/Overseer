@@ -23,6 +23,12 @@ export function startOfWeek(value: string, firstDay: 0 | 1 = 1): string {
   return localDateKey(date)
 }
 
+export function eventOccursOnDate(event: { date: string; repeatWeekly?: boolean }, date: string): boolean {
+  if (event.date === date) return true
+  if (!event.repeatWeekly || date < event.date) return false
+  return parseLocalDate(event.date).getDay() === parseLocalDate(date).getDay()
+}
+
 export function formatDate(value: string, options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' }): string {
   return new Intl.DateTimeFormat(undefined, options).format(parseLocalDate(value))
 }
