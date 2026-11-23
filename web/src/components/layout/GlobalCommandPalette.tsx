@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { BookOpen, CalendarDays, Command, Focus, LayoutDashboard, ListTodo, NotebookPen, Plus, Search, Settings, ChartNoAxesCombined, type LucideIcon } from 'lucide-react'
+import { BookOpen, CalendarDays, CircleHelp, Command, Focus, LayoutDashboard, ListTodo, NotebookPen, Plus, Search, Settings, ChartNoAxesCombined, type LucideIcon } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { useNavigate } from 'react-router-dom'
 import { useAppData } from '../../app/AppDataContext'
@@ -14,14 +14,14 @@ type CommandItem = {
 }
 
 const navigation: CommandItem[] = [
-  { id: 'dashboard', label: 'Dashboard', detail: 'Your workspace overview', group: 'Navigate', icon: LayoutDashboard, to: '/dashboard' },
+  { id: 'dashboard', label: 'Home', detail: 'Your workspace overview', group: 'Navigate', icon: LayoutDashboard, to: '/dashboard' },
   { id: 'schedule', label: 'Schedule', detail: 'Classes and events', group: 'Navigate', icon: CalendarDays, to: '/schedule' },
   { id: 'planner', label: 'Day planner', detail: 'Plan a day with breathing room', group: 'Navigate', icon: NotebookPen, to: '/day-planner' },
   { id: 'tasks', label: 'Tasks', detail: 'Review and organize your tasks', group: 'Navigate', icon: ListTodo, to: '/tasks' },
-  { id: 'library', label: 'Study library', detail: 'Courses, lessons, and materials', group: 'Navigate', icon: BookOpen, to: '/library' },
+  { id: 'library', label: 'Study', detail: 'Courses, lessons, and materials', group: 'Navigate', icon: BookOpen, to: '/library' },
   { id: 'focus', label: 'Focus', detail: 'Open your focus timer', group: 'Navigate', icon: Focus, to: '/focus' },
   { id: 'progress', label: 'Progress', detail: 'Review study activity', group: 'Navigate', icon: ChartNoAxesCombined, to: '/progress' },
-  { id: 'assistant', label: 'Study assistant', detail: 'View the assistant status', group: 'Navigate', icon: BookOpen, to: '/assistant' },
+  { id: 'assistant', label: 'Study assistant', detail: 'View the assistant status', group: 'Navigate', icon: CircleHelp, to: '/assistant' },
   { id: 'settings', label: 'Settings', detail: 'Appearance and local data', group: 'Navigate', icon: Settings, to: '/settings' },
 ]
 

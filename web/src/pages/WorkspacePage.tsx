@@ -4,8 +4,9 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import { useAppData } from '../app/AppDataContext'
 import { addDays, durationLabel, formatDate, formatTime, isValidTime, localDateKey, parseLocalDate, startOfWeek } from '../data/dates'
-import { createId, parseImportData, STORAGE_VERSION } from '../data/storage'
-import type { AccentColor, AppData, AppearanceMode, AppearancePreset, Course, EventColor, EventType, FocusMode, LayoutDensity, Lesson, PlannerBlock, Priority, ScheduleEvent, StudyMaterial, Task, UserPreferences } from '../types/app'
+import { createId, loadLegacyAppData, parseImportData } from '../data/storage'
+import { saveUserPreferences, subscribeUserPreferences } from '../data/firestore/repositories/preferences'
+import type { Course, EventColor, EventType, FocusMode, Lesson, PlannerBlock, Priority, ScheduleEvent, StudyMaterial, Task } from '../types/app'
 import Badge from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -83,6 +84,7 @@ function EventEditor({ initial, courses, date, existing, onSave, onCancel }: { i
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [eventDate, setEventDate] = useState(initial?.date ?? date)
+  const [repeatWeekly, setRepeatWeekly] = useState(initial?.repeatWeekly ?? false)
   const [startTime, setStartTime] = useState(initial?.startTime ?? '09:00')
   const [endTime, setEndTime] = useState(initial?.endTime ?? '10:00')
   const [type, setType] = useState<EventType>(initial?.type ?? 'study')
@@ -90,15 +92,16 @@ function EventEditor({ initial, courses, date, existing, onSave, onCancel }: { i
   const [location, setLocation] = useState(initial?.location ?? '')
   const [color, setColor] = useState<EventColor>(initial?.color ?? 'navy')
   const [error, setError] = useState('')
-  const conflicts = existing.filter((event) => event.id !== initial?.id && event.date === eventDate && startTime < event.endTime && endTime > event.startTime)
+  const conflicts = existing.filter((event) => event.id !== initial?.id && eventOccursOnDate(event, eventDate) && startTime < event.endTime && endTime > event.startTime)
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (!title.trim()) { setError('Enter an event title.'); return }
     if (!eventDate || !isValidTime(startTime) || !isValidTime(endTime) || endTime <= startTime) { setError('Choose a date and make sure the end time is after the start time.'); return }
-    onSave({ id: initial?.id ?? createId('event'), title: title.trim(), description: description.trim(), date: eventDate, startTime, endTime, type, courseId: courseId || null, location: location.trim(), color, createdAt: initial?.createdAt ?? stamp() })
+    onSave({ id: initial?.id ?? createId('event'), title: title.trim(), description: description.trim(), date: eventDate, repeatWeekly, startTime, endTime, type, courseId: courseId || null, location: location.trim(), color, createdAt: initial?.createdAt ?? stamp() })
   }
   return <form className="editor-form" onSubmit={submit}>
     <div className="form-grid"><Field label="Event title"><input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required /></Field><Field label="Type"><select value={type} onChange={(e) => setType(e.target.value as EventType)}><option value="class">Class</option><option value="study">Study</option><option value="personal">Personal</option><option value="other">Other</option></select></Field><Field label="Date"><input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required /></Field><Field label="Course"><select value={courseId} onChange={(e) => setCourseId(e.target.value)}><option value="">No course</option>{courses.map((course) => <option value={course.id} key={course.id}>{course.name}</option>)}</select></Field><Field label="Start"><input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required /></Field><Field label="End"><input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required /></Field><Field label="Location"><input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={100} /></Field><Field label="Color"><select value={color} onChange={(e) => setColor(e.target.value as EventColor)}><option value="navy">Navy</option><option value="lime">Lime</option><option value="blue">Blue</option><option value="amber">Amber</option></select></Field></div>
+    <label className="setting-toggle event-repeat-toggle"><span><strong>Repeat weekly</strong><small>Keep this event on the same weekday.</small></span><input type="checkbox" checked={repeatWeekly} onChange={(e) => setRepeatWeekly(e.target.checked)} /><span className="setting-toggle__track" aria-hidden="true"><span /></span></label>
     <Field label="Description"><textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
     {conflicts.length > 0 && <InlineNotice tone="info">Schedule conflict: this overlaps {conflicts.map((item) => item.title).join(', ')}. Review the time before saving.</InlineNotice>}{error && <InlineNotice tone="error">{error}</InlineNotice>}<div className="form-actions"><Button type="submit">{initial ? 'Save changes' : 'Create event'}</Button><Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button></div>
   </form>
@@ -133,6 +136,8 @@ function TasksPage() {
   const [status, setStatus] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [courseFilter, setCourseFilter] = useState('all')
+  const [deletionError, setDeletionError] = useState('')
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
   const today = localDateKey()
   const updateShow = (value: boolean) => { setShowForm(value); if (!value && searchParams.has('new')) setSearchParams({}, { replace: true }) }
   const save = (task: Task) => { update({ tasks: data.tasks.some((item) => item.id === task.id) ? data.tasks.map((item) => item.id === task.id ? task : item) : [...data.tasks, task] }); setEditing(undefined); updateShow(false) }
@@ -141,11 +146,33 @@ function TasksPage() {
     return matchesStatus && (priorityFilter === 'all' || task.priority === priorityFilter) && (courseFilter === 'all' || task.courseId === courseFilter) && `${task.title} ${task.description}`.toLowerCase().includes(search.toLowerCase())
   }).sort((a, b) => Number(a.completed) - Number(b.completed) || (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999') || ({ High: 0, Medium: 1, Low: 2 }[a.priority] - { High: 0, Medium: 1, Low: 2 }[b.priority]))
   const toggle = (task: Task) => update({ tasks: data.tasks.map((item) => item.id === task.id ? { ...item, completed: !item.completed, completedAt: item.completed ? null : stamp() } : item) })
-  const remove = (task: Task) => update({ tasks: data.tasks.filter((item) => item.id !== task.id), plannerBlocks: data.plannerBlocks.map((block) => block.taskId === task.id ? { ...block, taskId: null } : block), focusTimer: data.focusTimer.taskId === task.id ? { ...data.focusTimer, taskId: null } : data.focusTimer })
+  const remove = async (task: Task) => {
+    if (!window.confirm(`Delete “${task.title}”? This uses the trusted deletion system.`)) return
+    setDeletionError('')
+    setDeletingTaskId(task.id)
+    try {
+      const { getFirebaseServices } = await import('../firebase/client')
+      const { functions } = getFirebaseServices()
+      const deletion = await import('../data/firestore/repositories/workspace')
+      const request = await deletion.requestTrustedTaskDeletion(functions, task.id)
+      let status = request
+      for (let attempt = 0; attempt < 20 && !status.completed && status.status !== 'failed'; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1000))
+        status = await deletion.getTrustedTaskDeletionStatus(functions, task.id, request.jobId)
+      }
+      if (!status.completed) throw new Error(status.status === 'failed' ? 'Trusted deletion failed.' : 'Trusted deletion is still in progress. Retry status from Tasks.')
+      update({ tasks: data.tasks.filter((item) => item.id !== task.id), plannerBlocks: data.plannerBlocks.map((block) => block.taskId === task.id ? { ...block, taskId: null } : block), focusTimer: data.focusTimer.taskId === task.id ? { ...data.focusTimer, taskId: null } : data.focusTimer })
+    } catch (cause) {
+      setDeletionError(cause instanceof Error ? cause.message : 'Task deletion failed.')
+    } finally {
+      setDeletingTaskId(null)
+    }
+  }
   return <div className="workspace-page"><SectionHeading title="Keep your next steps together." detail={`${data.tasks.filter((task) => !task.completed).length} pending · ${data.tasks.filter((task) => task.completed).length} completed`} action={<Button onClick={() => { setEditing(undefined); updateShow(!showForm) }}><Plus size={16} /> New task</Button>} />
+    {deletionError && <InlineNotice tone="error">{deletionError}</InlineNotice>}
     {(showForm || editing) && <Card className="editor-card" padding="medium"><h3>{editing ? 'Edit task' : 'Create a task'}</h3><TaskEditor initial={editing} courses={data.courses} onSave={save} onCancel={() => { setEditing(undefined); updateShow(false) }} /></Card>}
     <Card className="filter-card" padding="medium"><div className="filter-row task-status-filters">{[['all','All'],['pending','Pending'],['today','Due today'],['overdue','Overdue'],['completed','Completed']].map(([value,label]) => <button className={`filter-chip${status === value ? ' filter-chip--active' : ''}`} key={value} onClick={() => setStatus(value)}>{label}</button>)}</div><div className="filter-row"><label className="search-field"><Search size={15} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tasks" /></label><select aria-label="Filter by priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}><option value="all">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select><select aria-label="Filter by course" value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}><option value="all">All courses</option>{data.courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select></div></Card>
-    <div className="task-list">{list.map((task) => <Card className={`managed-task${task.completed ? ' managed-task--complete' : ''}`} key={task.id} padding="medium"><motion.button type="button" className={`task-check task-check-button${task.completed ? ' task-check--done' : ''}`} aria-label={task.completed ? `Reopen ${task.title}` : `Complete ${task.title}`} onClick={() => toggle(task)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.88 }} transition={{ type: 'spring', stiffness: 480, damping: 24 }}>{task.completed && <Check size={13} />}</motion.button><div className="managed-task__main"><strong>{task.title}</strong>{task.description && <p>{task.description}</p>}<div className="managed-task__meta"><Badge tone={task.priority === 'High' ? 'amber' : task.priority === 'Medium' ? 'blue' : 'soft'}>{task.priority} priority</Badge><span>{courseName(data.courses, task.courseId)}</span><span>{task.dueDate ? `${formatDate(task.dueDate, { month: 'short', day: 'numeric', year: 'numeric' })}${task.dueTime ? ` · ${formatTime(task.dueTime, data.preferences.timeFormat)}` : ''}` : 'No due date'}</span>{!task.completed && task.dueDate && task.dueDate < today && <Badge tone="amber">Overdue</Badge>}</div></div><div className="row-actions"><button className="icon-button" aria-label={`Edit ${task.title}`} onClick={() => { setEditing(task); setShowForm(false) }}><Pencil size={16} /></button><ConfirmAction title={`Delete ${task.title}?`} description="This task will be removed from your workspace. Any planned block linked to it will be unlinked." onConfirm={() => remove(task)}><button type="button" className="icon-button" aria-label={`Delete ${task.title}`}><Trash2 size={16} /></button></ConfirmAction></div></Card>)}{list.length === 0 && <Card padding="large">{empty(search ? 'No tasks match your search and filters.' : 'No tasks in this view yet. Create one to get started.')}</Card>}</div>
+    <div className="task-list">{list.map((task) => <Card className={`managed-task${task.completed ? ' managed-task--complete' : ''}`} key={task.id} padding="medium"><button className={`task-check task-check-button${task.completed ? ' task-check--done' : ''}`} aria-label={task.completed ? `Reopen ${task.title}` : `Complete ${task.title}`} onClick={() => toggle(task)}>{task.completed && <Check size={13} />}</button><div className="managed-task__main"><strong>{task.title}</strong>{task.description && <p>{task.description}</p>}<div className="managed-task__meta"><Badge tone={task.priority === 'High' ? 'amber' : task.priority === 'Medium' ? 'blue' : 'soft'}>{task.priority} priority</Badge><span>{courseName(data.courses, task.courseId)}</span><span>{task.dueDate ? `${formatDate(task.dueDate, { month: 'short', day: 'numeric', year: 'numeric' })}${task.dueTime ? ` · ${formatTime(task.dueTime, data.preferences.timeFormat)}` : ''}` : 'No due date'}</span>{!task.completed && task.dueDate && task.dueDate < today && <Badge tone="amber">Overdue</Badge>}</div></div><div className="row-actions"><button className="icon-button" aria-label={`Edit ${task.title}`} onClick={() => { setEditing(task); setShowForm(false) }}><Pencil size={16} /></button><button className="icon-button" aria-label={`Delete ${task.title}`} disabled={deletingTaskId === task.id} onClick={() => void remove(task)}><Trash2 size={16} /></button></div></Card>)}{list.length === 0 && <Card padding="large">{empty(search ? 'No tasks match your search and filters.' : 'No tasks in this view yet. Create one to get started.')}</Card>}</div>
   </div>
 }
 
@@ -157,15 +184,15 @@ function SchedulePage() {
   const [showForm, setShowForm] = useState(searchParams.get('new') === '1')
   const [editing, setEditing] = useState<ScheduleEvent | undefined>()
   const days = Array.from({ length: 7 }, (_, index) => addDays(week, index))
-  const events = data.events.filter((event) => event.date === selected).sort((a,b) => a.startTime.localeCompare(b.startTime))
+  const events = data.events.filter((event) => eventOccursOnDate(event, selected)).sort((a,b) => a.startTime.localeCompare(b.startTime))
   const save = (event: ScheduleEvent) => { update({ events: data.events.some((item) => item.id === event.id) ? data.events.map((item) => item.id === event.id ? event : item) : [...data.events, event] }); setShowForm(false); setEditing(undefined); setSelected(event.date); setWeek(startOfWeek(event.date, data.preferences.firstDayOfWeek)); setSearchParams({ date: event.date }, { replace: true }) }
   const changeWeek = (amount: number) => { const next = addDays(week, amount * 7); setWeek(next); setSelected(next) }
   const remove = (event: ScheduleEvent) => update({ events: data.events.filter((item) => item.id !== event.id) })
   return <div className="workspace-page"><SectionHeading title="Your schedule, at a glance." detail="Select a day to view or manage events" action={<Button onClick={() => { setEditing(undefined); setShowForm(true) }}><Plus size={16} /> Add event</Button>} />
-    <Card className="calendar-card" padding="medium"><div className="calendar-toolbar"><div><h3>{formatDate(week, { month: 'long', year: 'numeric' })}</h3><p>{formatDate(week, { month: 'short', day: 'numeric' })} – {formatDate(addDays(week, 6), { month: 'short', day: 'numeric', year: 'numeric' })}</p></div><div className="form-actions"><Button variant="secondary" size="small" onClick={() => { setWeek(startOfWeek(localDateKey(), data.preferences.firstDayOfWeek)); setSelected(localDateKey()) }}>Today</Button><Button variant="secondary" size="small" aria-label="Previous week" onClick={() => changeWeek(-1)}><ChevronLeft size={16} /></Button><Button variant="secondary" size="small" aria-label="Next week" onClick={() => changeWeek(1)}><ChevronRight size={16} /></Button></div></div><div className="week-strip">{days.map((day) => <button key={day} className={`week-day${day === selected ? ' week-day--active' : ''}${day === localDateKey() ? ' week-day--today' : ''}`} onClick={() => setSelected(day)}><small>{formatDate(day, { weekday: 'short' })}</small><strong>{parseLocalDate(day).getDate()}</strong><span>{data.events.filter((event) => event.date === day).length} events</span></button>)}</div></Card>
+    <Card className="calendar-card" padding="medium"><div className="calendar-toolbar"><div><h3>{formatDate(week, { month: 'long', year: 'numeric' })}</h3><p>{formatDate(week, { month: 'short', day: 'numeric' })} – {formatDate(addDays(week, 6), { month: 'short', day: 'numeric', year: 'numeric' })}</p></div><div className="form-actions"><Button variant="secondary" size="small" onClick={() => { setWeek(startOfWeek(localDateKey(), data.preferences.firstDayOfWeek)); setSelected(localDateKey()) }}>Today</Button><Button variant="secondary" size="small" aria-label="Previous week" onClick={() => changeWeek(-1)}><ChevronLeft size={16} /></Button><Button variant="secondary" size="small" aria-label="Next week" onClick={() => changeWeek(1)}><ChevronRight size={16} /></Button></div></div><div className="week-strip">{days.map((day) => <button key={day} className={`week-day${day === selected ? ' week-day--active' : ''}${day === localDateKey() ? ' week-day--today' : ''}`} onClick={() => setSelected(day)}><small>{formatDate(day, { weekday: 'short' })}</small><strong>{parseLocalDate(day).getDate()}</strong><span>{data.events.filter((event) => eventOccursOnDate(event, day)).length} events</span></button>)}</div></Card>
     <div className="schedule-detail"><div className="schedule-detail__heading"><div><p className="eyebrow">SELECTED DAY</p><h2>{formatDate(selected)}</h2></div><div className="schedule-day-picker"><input aria-label="Select schedule date" type="date" value={selected} onChange={(e) => { if (e.target.value) { setSelected(e.target.value); setWeek(startOfWeek(e.target.value, data.preferences.firstDayOfWeek)) } }} /></div></div>
       {(showForm || editing) && <Card className="editor-card" padding="medium"><h3>{editing ? 'Edit event' : 'Add schedule event'}</h3><EventEditor initial={editing} courses={data.courses} date={selected} existing={data.events} onSave={save} onCancel={() => { setShowForm(false); setEditing(undefined) }} /></Card>}
-      <Card className="schedule-list" padding="small">{events.map((event) => <div className="schedule-event-row" key={event.id}><div className="schedule-event-time"><strong>{formatTime(event.startTime, data.preferences.timeFormat)}</strong><span>{formatTime(event.endTime, data.preferences.timeFormat)}</span></div><span className={`schedule-color-dot schedule-color-dot--${event.color}`} /><div className="schedule-event-copy"><strong>{event.title}</strong><p>{event.description || event.type[0]!.toUpperCase() + event.type.slice(1)}{event.location ? ` · ${event.location}` : ''}</p><small>{courseName(data.courses, event.courseId)}</small></div><Badge tone={event.type === 'class' ? 'blue' : event.type === 'study' ? 'lime' : 'soft'}>{event.type}</Badge><div className="row-actions"><button className="icon-button" aria-label={`Edit ${event.title}`} onClick={() => { setEditing(event); setShowForm(false) }}><Pencil size={16} /></button><ConfirmAction title={`Delete ${event.title}?`} description="This schedule event will be permanently removed from your workspace." onConfirm={() => remove(event)}><button type="button" className="icon-button" aria-label={`Delete ${event.title}`}><Trash2 size={16} /></button></ConfirmAction></div></div>)}{events.length === 0 && empty('No events on this date. Add a class, study session, or personal event.')}</Card>
+      <Card className="schedule-list" padding="small">{events.map((event) => <div className="schedule-event-row" key={event.id}><div className="schedule-event-time"><strong>{formatTime(event.startTime, data.preferences.timeFormat)}</strong><span>{formatTime(event.endTime, data.preferences.timeFormat)}</span></div><span className={`schedule-color-dot schedule-color-dot--${event.color}`} /><div className="schedule-event-copy"><strong>{event.title}</strong><p>{event.description || event.type[0]!.toUpperCase() + event.type.slice(1)}{event.location ? ` · ${event.location}` : ''}</p><small>{courseName(data.courses, event.courseId)}{event.repeatWeekly ? ' · Weekly' : ''}</small></div><Badge tone={event.type === 'class' ? 'blue' : event.type === 'study' ? 'lime' : 'soft'}>{event.type}</Badge><div className="row-actions"><button className="icon-button" aria-label={`Edit ${event.title}`} onClick={() => { setEditing(event); setShowForm(false) }}><Pencil size={16} /></button><ConfirmAction title={`Delete ${event.title}?`} description="This schedule event will be permanently removed from your workspace." onConfirm={() => remove(event)}><button type="button" className="icon-button" aria-label={`Delete ${event.title}`}><Trash2 size={16} /></button></ConfirmAction></div></div>)}{events.length === 0 && empty('No events on this date. Add a class, study session, or personal event.')}</Card>
     </div>
   </div>
 }
@@ -181,7 +208,7 @@ function PlannerPage() {
   const [editingBlock, setEditingBlock] = useState<PlannerBlock | undefined>()
   const [error, setError] = useState('')
   const blocks = data.plannerBlocks.filter((block) => block.date === date).sort((a,b) => a.order - b.order || a.startTime.localeCompare(b.startTime))
-  const events = data.events.filter((event) => event.date === date).sort((a,b) => a.startTime.localeCompare(b.startTime))
+  const events = data.events.filter((event) => eventOccursOnDate(event, date)).sort((a,b) => a.startTime.localeCompare(b.startTime))
   const tasks = data.tasks.filter((task) => !task.completed && (!task.dueDate || task.dueDate <= date)).sort((a,b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))
   const add = (event: FormEvent) => { event.preventDefault(); setError(''); if (!title.trim()) { setError('Add a title for this planned block.'); return }; if (!isValidTime(startTime) || !isValidTime(endTime) || endTime <= startTime) { setError('End time must be after start time.'); return } if (editingBlock) { update({ plannerBlocks: data.plannerBlocks.map((item) => item.id === editingBlock.id ? { ...item, title: title.trim(), startTime, endTime, taskId: taskId || null, courseId: courseId || null } : item) }); setEditingBlock(undefined) } else { const item: PlannerBlock = { id: createId('block'), date, title: title.trim(), startTime, endTime, taskId: taskId || null, courseId: courseId || null, completed: false, order: blocks.length, createdAt: stamp() }; update({ plannerBlocks: [...data.plannerBlocks, item] }) } setTitle(''); setTaskId(''); setCourseId('') }
   const edit = (block: PlannerBlock) => { setEditingBlock(block); setTitle(block.title); setStartTime(block.startTime); setEndTime(block.endTime); setTaskId(block.taskId ?? ''); setCourseId(block.courseId ?? ''); setError('') }
@@ -202,8 +229,32 @@ function LibraryPage({ importing = false }: { importing?: boolean }) {
   const [editingCourse, setEditingCourse] = useState<Course | undefined>()
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
+  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null)
   const saveCourse = (course: Course) => { update({ courses: data.courses.some((item) => item.id === course.id) ? data.courses.map((item) => item.id === course.id ? course : item) : [...data.courses, course] }); setCourseForm(false); setEditingCourse(undefined) }
-  const removeCourse = (course: Course) => update({ courses: data.courses.filter((item) => item.id !== course.id), lessons: data.lessons.filter((lesson) => lesson.courseId !== course.id), tasks: data.tasks.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), events: data.events.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), materials: data.materials.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), plannerBlocks: data.plannerBlocks.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), focusSessions: data.focusSessions.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), focusTimer: data.focusTimer.courseId === course.id ? { ...data.focusTimer, courseId: null } : data.focusTimer })
+  const removeCourse = (course: Course) => {
+    void (async () => {
+      if (!window.confirm(`Delete ${course.name} and all associated Course data? This uses the trusted deletion system.`)) return
+      setError('')
+      setDeletingCourseId(course.id)
+      try {
+        const { getFirebaseServices } = await import('../firebase/client')
+        const { functions } = getFirebaseServices()
+        const deletion = await import('../data/firestore/repositories/workspace')
+        const request = await deletion.requestTrustedCourseDeletion(functions, course.id)
+        let status = request
+        for (let attempt = 0; attempt < 20 && !status.completed && status.status !== 'failed'; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1000))
+          status = await deletion.getTrustedCourseDeletionStatus(functions, course.id, request.jobId)
+        }
+        if (!status.completed) throw new Error(status.status === 'failed' ? 'Trusted Course deletion failed.' : 'Trusted Course deletion is still in progress.')
+        update({ courses: data.courses.filter((item) => item.id !== course.id), lessons: data.lessons.filter((lesson) => lesson.courseId !== course.id), tasks: data.tasks.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), events: data.events.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), materials: data.materials.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), plannerBlocks: data.plannerBlocks.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), focusSessions: data.focusSessions.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), focusTimer: data.focusTimer.courseId === course.id ? { ...data.focusTimer, courseId: null } : data.focusTimer })
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Course deletion failed.')
+      } finally {
+        setDeletingCourseId(null)
+      }
+    })()
+  }
   const addFile = async (file: File) => {
     setError('')
     const ext = file.name.split('.').pop()?.toLowerCase()
@@ -221,8 +272,8 @@ function LibraryPage({ importing = false }: { importing?: boolean }) {
   return <div className="workspace-page"><SectionHeading title={importing ? 'Bring your notes with you.' : 'A home for everything you’re learning.'} detail="Courses, lessons, and local study materials" action={importing ? <Link className="button button--secondary button--medium" to="/library"><ArrowLeft size={15} /> Back to library</Link> : <Button onClick={() => setCourseForm(!courseForm)}><Plus size={16} /> Add course</Button>} />
     {(courseForm || editingCourse) && <Card className="editor-card" padding="medium"><h3>{editingCourse ? 'Edit course' : 'Create a course'}</h3><CourseEditor initial={editingCourse} onSave={saveCourse} onCancel={() => { setCourseForm(false); setEditingCourse(undefined) }} /></Card>}
     {importing && <Card className="editor-card import-dropzone" padding="large"><FileUp size={24} /><h3>Import a local study material</h3><p>Text is extracted in your browser and saved only in this workspace.</p><label className="button button--primary button--medium">Choose TXT, Markdown, or HTML<input className="visually-hidden" type="file" accept=".txt,.md,.markdown,.html,.htm,text/plain,text/markdown,text/html" onChange={(e) => { const file = e.target.files?.[0]; if (file) void addFile(file); e.currentTarget.value = '' }} /></label>{error && <InlineNotice tone="error">{error}</InlineNotice>}</Card>}
-    {!importing && <><div className="library-heading"><SectionHeading title="Your courses" detail={`${data.courses.length} ${data.courses.length === 1 ? 'course' : 'courses'}`} /><Link className="text-link" to="/library/import"><FileUp size={15} /> Import material <ArrowRight size={14} /></Link></div><div className="library-course-grid">{data.courses.map((course) => { const lessons = data.lessons.filter((lesson) => lesson.courseId === course.id); const done = lessons.filter((lesson) => lesson.completed).length; return <Card className="library-course" key={course.id} padding="medium"><div className="library-course__top"><span className={`course-icon course-icon--${course.tint}`}><BookOpen size={17} /></span><span className="course-code">{course.code || 'COURSE'}</span><span className="row-actions"><button className="icon-button" aria-label={`Edit ${course.name}`} onClick={() => { setEditingCourse(course); setCourseForm(false) }}><Pencil size={15} /></button><ConfirmAction title={`Delete ${course.name}?`} description="The course and its lessons will be deleted. Related tasks, events, materials, plans, and focus history will stay in your workspace without a course assignment." onConfirm={() => removeCourse(course)}><button type="button" className="icon-button" aria-label={`Delete ${course.name}`}><Trash2 size={15} /></button></ConfirmAction></span></div><Link className="library-course__title" to={`/courses/${course.id}`}>{course.name}</Link><p>{course.description || 'No description yet.'}</p><div className="course-progress"><ProgressBar value={lessons.length ? done / lessons.length * 100 : 0} label={`${course.name} progress`} /><span>{lessons.length ? Math.round(done / lessons.length * 100) : 0}%</span></div><small>{done} of {lessons.length} lessons complete</small></Card> })}{data.courses.length === 0 && <Card padding="medium">{empty('Create a course to organize lessons, materials, tasks, and focus sessions.')}</Card>}</div>
-      <div className="library-heading materials-heading"><SectionHeading title="Study materials" detail={`${data.materials.length} saved locally`} /><label className="search-field"><Search size={15} /><input aria-label="Search materials" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search materials" /></label></div><div className="materials-grid">{shownMaterials.map((material) => <MaterialCard key={material.id} material={material} courses={data.courses} onChange={(next) => update({ materials: data.materials.map((item) => item.id === next.id ? next : item) })} onDelete={() => update({ materials: data.materials.filter((item) => item.id !== material.id) })} />)}{shownMaterials.length === 0 && <Card padding="medium">{empty(search ? 'No materials match that search.' : 'Import a TXT, Markdown, or HTML file to add local study material.')}</Card>}</div></>}
+    {!importing && <><div className="library-heading"><SectionHeading title="Your courses" detail={`${data.courses.length} ${data.courses.length === 1 ? 'course' : 'courses'}`} /><Link className="text-link" to="/library/import"><FileUp size={15} /> Import material <ArrowRight size={14} /></Link></div><div className="library-course-grid">{data.courses.map((course) => { const lessons = data.lessons.filter((lesson) => lesson.courseId === course.id); const done = lessons.filter((lesson) => lesson.completed).length; return <Card className="library-course" key={course.id} padding="medium"><div className="library-course__top"><span className={`course-icon course-icon--${course.tint}`}><BookOpen size={17} /></span><span className="course-code">{course.code || 'COURSE'}</span><span className="row-actions"><button className="icon-button" aria-label={`Edit ${course.name}`} onClick={() => { setEditingCourse(course); setCourseForm(false) }}><Pencil size={15} /></button><button className="icon-button" aria-label={`Delete ${course.name}`} disabled={deletingCourseId === course.id} onClick={() => removeCourse(course)}><Trash2 size={15} /></button></span></div><Link className="library-course__title" to={`/courses/${course.id}`}>{course.name}</Link><p>{course.description || 'No description yet.'}</p><div className="course-progress"><ProgressBar value={lessons.length ? done / lessons.length * 100 : 0} label={`${course.name} progress`} /><span>{lessons.length ? Math.round(done / lessons.length * 100) : 0}%</span></div><small>{done} of {lessons.length} lessons complete</small></Card> })}{data.courses.length === 0 && <Card padding="medium">{empty('Create a course to organize lessons, materials, tasks, and focus sessions.')}</Card>}</div>
+      <div className="library-heading materials-heading"><SectionHeading title="Study materials" detail={`${data.materials.length} saved locally`} /><label className="search-field"><Search size={15} /><input aria-label="Search materials" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search materials" /></label></div><div className="materials-grid">{shownMaterials.map((material) => <MaterialCard key={material.id} material={material} courses={data.courses} onChange={(next) => update({ materials: data.materials.map((item) => item.id === next.id ? next : item) })} onDelete={() => { if (window.confirm(`Delete “${material.title}”?`)) update({ materials: data.materials.filter((item) => item.id !== material.id) }) }} />)}{shownMaterials.length === 0 && <Card padding="medium">{empty(search ? 'No materials match that search.' : 'Import a TXT, Markdown, or HTML file to add local study material.')}</Card>}</div></>}
   </div>
 }
 
@@ -243,9 +294,35 @@ function CoursePage() {
   const lessons = data.lessons.filter((lesson) => lesson.courseId === courseId)
   if (!course) return <NotFound message="This course may have been deleted or the link may be incorrect." />
   const saveLesson = (lesson: Lesson) => { lesson.courseId = course.id; update({ lessons: data.lessons.some((item) => item.id === lesson.id) ? data.lessons.map((item) => item.id === lesson.id ? lesson : item) : [...data.lessons, lesson] }); setForm(false) }
-  const remove = () => { update({ courses: data.courses.filter((item) => item.id !== course.id), lessons: data.lessons.filter((lesson) => lesson.courseId !== course.id), tasks: data.tasks.map((task) => task.courseId === course.id ? { ...task, courseId: null } : task), events: data.events.map((event) => event.courseId === course.id ? { ...event, courseId: null } : event), materials: data.materials.map((material) => material.courseId === course.id ? { ...material, courseId: null } : material), plannerBlocks: data.plannerBlocks.map((block) => block.courseId === course.id ? { ...block, courseId: null } : block), focusSessions: data.focusSessions.map((session) => session.courseId === course.id ? { ...session, courseId: null } : session), focusTimer: data.focusTimer.courseId === course.id ? { ...data.focusTimer, courseId: null } : data.focusTimer }); navigate('/library') }
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const remove = () => {
+    void (async () => {
+      if (!window.confirm(`Delete ${course.name} and all associated trusted Course data?`)) return
+      setDeleting(true)
+      setDeleteError('')
+      try {
+        const { getFirebaseServices } = await import('../firebase/client')
+        const { functions } = getFirebaseServices()
+        const deletion = await import('../data/firestore/repositories/workspace')
+        const request = await deletion.requestTrustedCourseDeletion(functions, course.id)
+        let status = request
+        for (let attempt = 0; attempt < 20 && !status.completed && status.status !== 'failed'; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1000))
+          status = await deletion.getTrustedCourseDeletionStatus(functions, course.id, request.jobId)
+        }
+        if (!status.completed) throw new Error(status.status === 'failed' ? 'Trusted Course deletion failed.' : 'Trusted Course deletion is still in progress.')
+        navigate('/library')
+      } catch (cause) {
+        setDeleteError(cause instanceof Error ? cause.message : 'Course deletion failed.')
+      } finally {
+        setDeleting(false)
+      }
+    })()
+  }
   const done = lessons.filter((lesson) => lesson.completed).length
-  return <div className="workspace-page"><div className="detail-back"><Link className="text-link" to="/library"><ArrowLeft size={15} /> Study library</Link><div className="row-actions"><Button variant="secondary" size="small" onClick={() => setEditingCourse(!editingCourse)}><Pencil size={14} /> Edit course</Button><ConfirmAction title={`Delete ${course.name}?`} description="The course and all its lessons will be deleted. Related tasks, events, materials, plans, and focus history will stay in your workspace without a course assignment." onConfirm={remove}><button type="button" className="button button--secondary button--small"><Trash2 size={14} /> Delete</button></ConfirmAction></div></div>
+  return <div className="workspace-page"><div className="detail-back"><Link className="text-link" to="/library"><ArrowLeft size={15} /> Study library</Link><div className="row-actions"><Button variant="secondary" size="small" onClick={() => setEditingCourse(!editingCourse)}><Pencil size={14} /> Edit course</Button><Button variant="secondary" size="small" disabled={deleting} onClick={remove}><Trash2 size={14} /> {deleting ? 'Deleting…' : 'Delete'}</Button></div></div>
+    {deleteError && <InlineNotice tone="error">{deleteError}</InlineNotice>}
     {editingCourse && <Card className="editor-card" padding="medium"><h3>Edit course</h3><CourseEditor initial={course} onSave={(next) => { update({ courses: data.courses.map((item) => item.id === course.id ? next : item) }); setEditingCourse(false) }} onCancel={() => setEditingCourse(false)} /></Card>}
     <Card className="course-detail-card" padding="large"><div className="course-detail-heading"><span className={`course-icon course-icon--${course.tint}`}><BookOpen size={20} /></span><div><span className="eyebrow">{course.code || 'COURSE'}</span><h2>{course.name}</h2></div></div><p>{course.description || 'Add a description to keep the course context close.'}</p>{course.instructor && <p className="course-instructor">Instructor: {course.instructor}</p>}<div className="course-progress course-detail-progress"><ProgressBar value={lessons.length ? done / lessons.length * 100 : 0} /><span>{lessons.length ? Math.round(done / lessons.length * 100) : 0}% · {done}/{lessons.length} lessons</span></div></Card>
     <SectionHeading title="Lessons" detail="Open a lesson or mark it complete" action={<Button onClick={() => setForm(!form)}><Plus size={16} /> Add lesson</Button>} />{form && <Card className="editor-card" padding="medium"><h3>Add a lesson</h3><LessonEditor onSave={saveLesson} onCancel={() => setForm(false)} /></Card>}
@@ -369,7 +446,60 @@ function SettingsPage() {
   const [error, setError] = useState('')
   const [resetOpen, setResetOpen] = useState(false)
   const [pendingImport, setPendingImport] = useState<AppData | null>(null)
-  const save = (event: FormEvent) => { event.preventDefault(); update({ preferences: { ...data.preferences, displayName: name.trim() } }); setMessage('Preferences saved.'); setError('') }
+  const [hasLegacyData] = useState(() => loadLegacyAppData() !== null)
+  const [cloudPreferenceStatus, setCloudPreferenceStatus] = useState<'loading' | 'ready' | 'offline' | 'error'>('loading')
+  const [savingPreferences, setSavingPreferences] = useState(false)
+  useEffect(() => {
+    let active = true
+    let unsubscribe: (() => void) | undefined
+    void import('../firebase/client').then(({ getFirebaseServices }) => {
+      if (!active) return
+      try {
+        const { auth, firestore } = getFirebaseServices()
+        unsubscribe = subscribeUserPreferences(auth, firestore, (remote, fromCache) => {
+          if (!active) return
+          setCloudPreferenceStatus(fromCache ? 'offline' : 'ready')
+          if (remote) {
+            setName(remote.displayName)
+            update({ preferences: { displayName: remote.displayName, timeFormat: remote.timeFormat, firstDayOfWeek: remote.firstDayOfWeek, timeZoneId: remote.timeZoneId } })
+          }
+        }, (cause) => {
+          if (!active) return
+          setCloudPreferenceStatus('error')
+          setError(cause.message)
+        })
+      } catch (cause) {
+        if (!active) return
+        setCloudPreferenceStatus('error')
+        setError(cause instanceof Error ? cause.message : 'Cloud preferences are unavailable.')
+      }
+    }).catch((cause: unknown) => {
+      if (!active) return
+      setCloudPreferenceStatus('error')
+      setError(cause instanceof Error ? cause.message : 'Cloud preferences are unavailable.')
+    })
+    return () => { active = false; unsubscribe?.() }
+  }, [update])
+  const save = async (event: FormEvent) => {
+    event.preventDefault()
+    setError('')
+    setMessage('')
+    const preferences = { ...data.preferences, displayName: name.trim() }
+    try { new Intl.DateTimeFormat('en', { timeZone: preferences.timeZoneId }) } catch { setError('Enter a valid IANA timezone, such as Asia/Manila.'); return }
+    update({ preferences })
+    setSavingPreferences(true)
+    try {
+      const { auth, firestore } = await import('../firebase/client').then(({ getFirebaseServices }) => getFirebaseServices())
+      await saveUserPreferences(auth, firestore, preferences)
+      setCloudPreferenceStatus('ready')
+      setMessage('Preferences saved in this browser and synchronized to your Overseer account.')
+    } catch (cause) {
+      setCloudPreferenceStatus('error')
+      setError(`Your preferences remain saved in this browser, but cloud synchronization failed: ${cause instanceof Error ? cause.message : 'unknown error'}`)
+    } finally {
+      setSavingPreferences(false)
+    }
+  }
   const updatePreferences = (patch: Partial<UserPreferences>, feedback = 'Appearance updated.') => {
     update({ preferences: { ...data.preferences, ...patch } })
     setMessage(feedback)
@@ -380,10 +510,17 @@ function SettingsPage() {
     theme: appearanceMode === 'dark' ? 'dark' : appearanceMode === 'light' ? 'light' : data.preferences.theme,
   }, 'Color mode updated.')
   const exportData = () => { const blob = new Blob([JSON.stringify({ version: STORAGE_VERSION, data }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `overseer-backup-${localDateKey()}.json`; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); setMessage('Your data export has been downloaded.') }
+  const exportLegacyData = () => { const legacyData = loadLegacyAppData(); if (!legacyData) { setError('No valid legacy local workspace was found.'); return } const blob = new Blob([JSON.stringify({ version: 2, data: legacyData }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `overseer-legacy-backup-${localDateKey()}.json`; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); setMessage('The previous local workspace backup has been downloaded. Import it only into the account that owns that data.') }
   const readImport = async (file: File) => { setError(''); setMessage(''); try { setPendingImport(parseImportData(await file.text())) } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not read this data file.') } }
-  const confirmImport = () => { if (!pendingImport) return; importData(pendingImport); setName(pendingImport.preferences.displayName); setPendingImport(null); setMessage('Workspace data imported successfully.') }
+  const confirmImport = () => {
+    if (!pendingImport) return
+    const result = mergeAppData(data, pendingImport)
+    importData(result.data)
+    setPendingImport(null)
+    setMessage(`Imported ${result.summary.added} records; ${result.summary.alreadyPresent} already existed. Local preferences and timer were kept.${result.summary.idConflicts ? ` ${result.summary.idConflicts} ID conflicts were kept as separate records.` : ''}`)
+  }
   const reset = () => { resetData(); setName(''); setResetOpen(false); setMessage('Your local workspace has been reset.') }
-  return <div className="workspace-page"><SectionHeading title="Make your study space work for you." detail="These preferences and all workspace data stay in this browser" />{message && <InlineNotice tone="success">{message}</InlineNotice>}{error && <InlineNotice tone="error">{error}</InlineNotice>}
+  return <div className="workspace-page"><SectionHeading title="Make your study space work for you." detail="Preferences sync through Firestore. Courses and other workspace records remain browser-local until their cloud workflows are connected." />{message && <InlineNotice tone="success">{message}</InlineNotice>}{error && <InlineNotice tone="error">{error}</InlineNotice>}
     <Card className="settings-card appearance-card" padding="large">
       <div className="appearance-section-heading"><div><span className="eyebrow">YOUR WORKSPACE</span><h3>Appearance</h3><p className="muted-copy">Build a study space that feels comfortable to return to.</p></div></div>
       <div className="appearance-control-group">
@@ -419,10 +556,11 @@ function SettingsPage() {
       </div>
       <label className="setting-toggle"><span><strong>Reduce motion</strong><small>Use quieter transitions throughout the workspace.</small></span><input type="checkbox" checked={data.preferences.reducedMotion} onChange={(event) => updatePreferences({ reducedMotion: event.target.checked }, event.target.checked ? 'Reduced motion enabled.' : 'Reduced motion disabled.')} /><span className="setting-toggle__track" aria-hidden="true"><span /></span></label>
     </Card>
-    <Card className="settings-card" padding="large"><form className="editor-form" onSubmit={save}><h3>Local preferences</h3><p className="muted-copy">Your display name appears in the dashboard and workspace header.</p><div className="form-grid"><Field label="Display name"><input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></Field><Field label="Time format"><select value={data.preferences.timeFormat} onChange={(e) => update({ preferences: { ...data.preferences, timeFormat: e.target.value as '12h' | '24h' } })}><option value="12h">12-hour (3:30 PM)</option><option value="24h">24-hour (15:30)</option></select></Field><Field label="First day of the week"><select value={data.preferences.firstDayOfWeek} onChange={(e) => update({ preferences: { ...data.preferences, firstDayOfWeek: Number(e.target.value) as 0 | 1 } })}><option value={1}>Monday</option><option value={0}>Sunday</option></select></Field></div><Button type="submit">Save preferences</Button></form></Card>
-    <Card className="settings-card" padding="large"><h3>Backup and restore</h3><p className="muted-copy">Export a JSON backup or replace this workspace with a previous export.</p><div className="form-actions"><Button variant="secondary" onClick={exportData}>Export application data</Button><label className="button button--secondary button--medium">Import JSON backup<input className="visually-hidden" type="file" accept="application/json,.json" onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); e.currentTarget.value = '' }} /></label></div></Card>
+    <Card className="settings-card" padding="large"><form className="editor-form" onSubmit={(event) => void save(event)}><h3>Account preferences</h3><p className="muted-copy">Your display name, time format, week start, and timezone are synced to your account. Sync status: {cloudPreferenceStatus === 'loading' ? 'connecting' : cloudPreferenceStatus === 'ready' ? 'online' : cloudPreferenceStatus === 'offline' ? 'using cached data' : 'error'}.</p><div className="form-grid"><Field label="Display name"><input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></Field><Field label="Time format"><select value={data.preferences.timeFormat} onChange={(e) => update({ preferences: { ...data.preferences, timeFormat: e.target.value as '12h' | '24h' } })}><option value="12h">12-hour (3:30 PM)</option><option value="24h">24-hour (15:30)</option></select></Field><Field label="First day of the week"><select value={data.preferences.firstDayOfWeek} onChange={(e) => update({ preferences: { ...data.preferences, firstDayOfWeek: Number(e.target.value) as 0 | 1 } })}><option value={1}>Monday</option><option value={0}>Sunday</option></select></Field><Field label="IANA timezone"><input value={data.preferences.timeZoneId} onChange={(e) => update({ preferences: { ...data.preferences, timeZoneId: e.target.value } })} placeholder="Asia/Manila" required /></Field></div><Button type="submit" disabled={savingPreferences}>{savingPreferences ? 'Saving preferences…' : 'Save preferences'}</Button></form></Card>
+    <Card className="settings-card" padding="large"><h3>Backup and transfer</h3><p className="muted-copy">Export a versioned JSON backup or merge one from Android or another browser. Existing records and local preferences stay in place.</p><div className="form-actions"><Button variant="secondary" onClick={exportData}>Export application data</Button><label className="button button--secondary button--medium">Import JSON backup<input className="visually-hidden" type="file" accept="application/json,.json" onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); e.currentTarget.value = '' }} /></label></div></Card>
+    {hasLegacyData && <Card className="settings-card" padding="large"><h3>Previous browser workspace</h3><p className="muted-copy">An older workspace without an account association is still stored in this browser. It was not copied into this account. Export it to review or import it yourself; only do that if you own the data.</p><Button variant="secondary" onClick={exportLegacyData}>Export previous workspace</Button></Card>}
     <Card className="settings-card settings-danger" padding="large"><h3>Data management</h3><p className="muted-copy">Reset clears local workspace records and restores a blank workspace. This cannot be undone.</p><Button variant="secondary" onClick={() => setResetOpen(true)}><Trash2 size={15} /> Reset local data</Button></Card>
-    <AlertDialog open={Boolean(pendingImport)} onOpenChange={(open) => { if (!open) setPendingImport(null) }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Replace local workspace?</AlertDialogTitle><AlertDialogDescription>Importing this backup will replace the current local courses, lessons, tasks, schedule, plans, and focus history.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmImport}>Import backup</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    <AlertDialog open={Boolean(pendingImport)} onOpenChange={(open) => { if (!open) setPendingImport(null) }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Merge this workspace backup?</AlertDialogTitle><AlertDialogDescription>Imported records will be added to this workspace. Existing records, preferences, and timer state stay in place. Conflicting IDs are kept as separate records.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmImport}>Merge backup</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     <AlertDialog open={resetOpen} onOpenChange={setResetOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reset all local data?</AlertDialogTitle><AlertDialogDescription>This permanently deletes your courses, lessons, materials, tasks, schedule, plans, and focus history from this browser. Overseer will return to a blank Studio workspace.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep my data</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={reset}>Reset workspace</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>
 }

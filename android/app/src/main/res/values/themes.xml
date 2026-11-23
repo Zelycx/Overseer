@@ -1,9 +1,26 @@
+
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Overseer" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <style name="Base.Theme.Overseer"
+        parent="Theme.Material3.DayNight.NoActionBar">
+
+        <item name="colorPrimary">@color/overseer_brand_navy</item>
+        <item name="colorOnPrimary">@color/overseer_on_brand</item>
+
+        <item name="colorSecondary">@color/overseer_lime</item>
+        <item name="colorOnSecondary">@color/overseer_navy</item>
+
+        <item name="colorSurface">@color/overseer_surface</item>
+        <item name="android:colorBackground">@color/overseer_white</item>
+        <item name="android:windowBackground">@color/overseer_white</item>
+        <item name="android:statusBarColor">@color/overseer_white</item>
+        <item name="android:navigationBarColor">@color/overseer_white</item>
+
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
     </style>
 
     <style name="Theme.Overseer" parent="Base.Theme.Overseer" />
+
 </resources>

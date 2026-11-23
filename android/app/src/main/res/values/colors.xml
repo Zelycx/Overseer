@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Overseer Brand Colors -->
+    <color name="overseer_navy">#131D44</color>
+    <color name="overseer_white">#FDF8FF</color>
+    <color name="overseer_lime">#C1FF00</color>
+    <color name="overseer_brand_navy">#131D44</color>
+    <color name="overseer_on_brand">#FDF8FF</color>
+    <color name="overseer_surface">#FFFFFF</color>
+    <color name="overseer_muted">#777777</color>
+    <color name="overseer_border">#E5E2EA</color>
+    <color name="overseer_subtle">#ECEAF1</color>
+
+    <!-- Basic Colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

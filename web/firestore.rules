@@ -1,0 +1,753 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owns(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function hasExactKeys(data, keys) {
+      return data is map
+        && data.keys().hasAll(keys)
+        && data.keys().hasOnly(keys);
+    }
+
+    function validMetadata(data, version) {
+      return data.schemaVersion is int
+        && data.schemaVersion == version
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function createdNow(data) {
+      return data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function updatedNow(data, oldData) {
+      return data.schemaVersion == oldData.schemaVersion
+        && data.createdAt == oldData.createdAt
+        && data.updatedAt == request.time;
+    }
+
+    function nonEmptyString(value) {
+      return value is string && value.matches(".*\\S.*");
+    }
+
+    function finiteNumber(value) {
+      return value is number
+        && value == value
+        && value - value == 0;
+    }
+
+    function validDateOnly(value) {
+      return value is string
+        && (
+          value.matches("^(?:000[1-9]|00[1-9][0-9]|0[1-9][0-9]{2}|[1-9][0-9]{3})-(?:(?:01|03|05|07|08|10|12)-(?:0[1-9]|[12][0-9]|3[01])|(?:04|06|09|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8]))$")
+          || value.matches("^(?:(?:[0-9]{2}(?:04|08|12|16|20|24|28|32|36|40|44|48|52|56|60|64|68|72|76|80|84|88|92|96)|(?:04|08|12|16|20|24|28|32|36|40|44|48|52|56|60|64|68|72|76|80|84|88|92|96)00)-02-29)$")
+        );
+    }
+
+    function validLifecycle(data) {
+      return (
+          data.deletionStatus == 'active'
+          && data.deletionJobId == null
+          && data.deletionStartedAt == null
+        )
+        || (
+          data.deletionStatus == 'deleting'
+          && nonEmptyString(data.deletionJobId)
+          && data.deletionStartedAt is timestamp
+        );
+    }
+
+    function activeLifecycle(data) {
+      return data.deletionStatus == 'active'
+        && data.deletionJobId == null
+        && data.deletionStartedAt == null;
+    }
+
+    function activeCourseTarget(data) {
+      return data.schemaVersion is int
+        && data.schemaVersion == 2
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && activeLifecycle(data);
+    }
+
+    function activeTaskTarget(data) {
+      return data.schemaVersion is int
+        && data.schemaVersion == 2
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && activeLifecycle(data);
+    }
+
+    function validProfile(data) {
+      return hasExactKeys(data, ['schemaVersion', 'createdAt', 'updatedAt', 'displayName'])
+        && validMetadata(data, 1)
+        && data.displayName is string;
+    }
+
+    function validCourse(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'name', 'code',
+          'description', 'instructor', 'tint', 'sortOrder',
+          'deletionStatus', 'deletionJobId', 'deletionStartedAt'
+        ])
+        && validMetadata(data, 2)
+        && data.name is string
+        && data.code is string
+        && data.description is string
+        && data.instructor is string
+        && data.tint in ['lavender', 'mint', 'sand']
+        && finiteNumber(data.sortOrder)
+        && validLifecycle(data);
+    }
+
+    function listableCourse(data) {
+      return data.schemaVersion is int
+        && data.schemaVersion == 2
+        && activeLifecycle(data);
+    }
+
+    function validLesson(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'courseId',
+          'title', 'description', 'content', 'completed', 'sortOrder'
+        ])
+        && validMetadata(data, 1)
+        && nonEmptyString(data.courseId)
+        && data.title is string
+        && data.description is string
+        && data.content is string
+        && data.completed is bool
+        && finiteNumber(data.sortOrder);
+    }
+
+    function validMaterial(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'title', 'content',
+          'fileName', 'courseId', 'sortOrder'
+        ])
+        && validMetadata(data, 1)
+        && data.title is string
+        && data.content is string
+        && data.fileName is string
+        && (data.courseId == null || data.courseId is string)
+        && finiteNumber(data.sortOrder);
+    }
+
+    function validTask(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'title', 'description',
+          'dueAt', 'dueDate', 'timeZoneId', 'priority', 'courseId',
+          'completed', 'completedAt', 'sortOrder', 'deletionStatus',
+          'deletionJobId', 'deletionStartedAt'
+        ])
+        && validMetadata(data, 2)
+        && data.title is string
+        && data.description is string
+        && (data.dueAt == null || data.dueAt is timestamp)
+        && (data.dueDate == null || validDateOnly(data.dueDate))
+        && (data.timeZoneId == null || data.timeZoneId is string)
+        && data.priority in ['Low', 'Medium', 'High']
+        && (data.courseId == null || data.courseId is string)
+        && data.completed is bool
+        && (data.completedAt == null || data.completedAt is timestamp)
+        && finiteNumber(data.sortOrder)
+        && validLifecycle(data)
+        && (
+          (data.dueAt is timestamp
+            && data.dueDate == null
+            && nonEmptyString(data.timeZoneId))
+          || (data.dueAt == null
+            && validDateOnly(data.dueDate)
+            && data.timeZoneId == null)
+          || (data.dueAt == null
+            && data.dueDate == null
+            && data.timeZoneId == null)
+        );
+    }
+
+    function listableTask(data) {
+      return data.schemaVersion is int
+        && data.schemaVersion == 2
+        && activeLifecycle(data);
+    }
+
+    function validEvent(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'title', 'description',
+          'startAt', 'endAt', 'timeZoneId', 'type', 'courseId', 'location',
+          'color', 'startTimeDisambiguation', 'endTimeDisambiguation'
+        ])
+        && validMetadata(data, 1)
+        && data.title is string
+        && data.description is string
+        && data.startAt is timestamp
+        && data.endAt is timestamp
+        && data.endAt > data.startAt
+        && nonEmptyString(data.timeZoneId)
+        && data.type in ['class', 'study', 'personal', 'other']
+        && (data.courseId == null || data.courseId is string)
+        && data.location is string
+        && data.color in ['navy', 'lime', 'blue', 'amber']
+        && (data.startTimeDisambiguation == null
+          || data.startTimeDisambiguation in ['earlier', 'later'])
+        && (data.endTimeDisambiguation == null
+          || data.endTimeDisambiguation in ['earlier', 'later']);
+    }
+
+    function validPlannerBlock(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'title', 'startAt',
+          'endAt', 'timeZoneId', 'taskId', 'courseId', 'completed', 'sortOrder'
+        ])
+        && validMetadata(data, 1)
+        && data.title is string
+        && data.startAt is timestamp
+        && data.endAt is timestamp
+        && data.endAt > data.startAt
+        && nonEmptyString(data.timeZoneId)
+        && (data.taskId == null || data.taskId is string)
+        && (data.courseId == null || data.courseId is string)
+        && data.completed is bool
+        && finiteNumber(data.sortOrder);
+    }
+
+    function validFocusSession(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'mode', 'startedAt',
+          'endedAt', 'durationSeconds', 'courseId', 'taskId', 'completed'
+        ])
+        && validMetadata(data, 1)
+        && data.mode in ['focus', 'shortBreak', 'longBreak']
+        && data.startedAt is timestamp
+        && data.endedAt is timestamp
+        && data.durationSeconds is int
+        && data.durationSeconds > 0
+        && (data.courseId == null || data.courseId is string)
+        && (data.taskId == null || data.taskId is string)
+        && data.completed == true;
+    }
+
+    function defaultConsent(data) {
+      return data.aiWorkspaceContextConsent == false
+        && data.consentedAt == null
+        && data.revokedAt == null
+        && data.consentVersion == null;
+    }
+
+    function optedInConsent(data) {
+      return data.aiWorkspaceContextConsent == true
+        && data.consentedAt is timestamp
+        && data.revokedAt == null
+        && nonEmptyString(data.consentVersion);
+    }
+
+    function revokedConsent(data) {
+      return data.aiWorkspaceContextConsent == false
+        && data.consentedAt is timestamp
+        && data.revokedAt is timestamp
+        && data.revokedAt >= data.consentedAt
+        && nonEmptyString(data.consentVersion);
+    }
+
+    function validConsentState(data) {
+      return defaultConsent(data) || optedInConsent(data) || revokedConsent(data);
+    }
+
+    function validPreferences(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'displayName',
+          'timeFormat', 'firstDayOfWeek', 'timeZoneId',
+          'aiWorkspaceContextConsent', 'consentedAt', 'revokedAt', 'consentVersion'
+        ])
+        && validMetadata(data, 1)
+        && data.displayName is string
+        && data.timeFormat in ['12h', '24h']
+        && data.firstDayOfWeek is int
+        && data.firstDayOfWeek in [0, 1]
+        && nonEmptyString(data.timeZoneId)
+        && data.aiWorkspaceContextConsent is bool
+        && (data.consentedAt == null || data.consentedAt is timestamp)
+        && (data.revokedAt == null || data.revokedAt is timestamp)
+        && (data.consentVersion == null || data.consentVersion is string)
+        && validConsentState(data);
+    }
+
+    function consentFieldsSame(oldData, newData) {
+      return oldData.aiWorkspaceContextConsent == newData.aiWorkspaceContextConsent
+        && oldData.consentedAt == newData.consentedAt
+        && oldData.revokedAt == newData.revokedAt
+        && oldData.consentVersion == newData.consentVersion;
+    }
+
+    function validConsentTransition(oldData, newData) {
+      let changed = newData.diff(oldData).affectedKeys();
+      return (
+          !changed.hasAny([
+            'aiWorkspaceContextConsent', 'consentedAt', 'revokedAt', 'consentVersion'
+          ])
+          && consentFieldsSame(oldData, newData)
+        )
+        || (
+          oldData.aiWorkspaceContextConsent == false
+          && oldData.consentedAt == null
+          && oldData.revokedAt == null
+          && oldData.consentVersion == null
+          && newData.aiWorkspaceContextConsent == true
+          && newData.consentedAt == request.time
+          && newData.revokedAt == null
+          && nonEmptyString(newData.consentVersion)
+        )
+        || (
+          oldData.aiWorkspaceContextConsent == true
+          && newData.aiWorkspaceContextConsent == false
+          && newData.consentedAt == oldData.consentedAt
+          && newData.revokedAt == request.time
+          && newData.consentVersion == oldData.consentVersion
+        )
+        || (
+          oldData.aiWorkspaceContextConsent == false
+          && oldData.consentedAt is timestamp
+          && oldData.revokedAt is timestamp
+          && newData.aiWorkspaceContextConsent == true
+          && newData.consentedAt == request.time
+          && newData.revokedAt == null
+          && nonEmptyString(newData.consentVersion)
+        );
+    }
+
+    function validTimerPreferences(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'focusDurationSeconds',
+          'shortBreakDurationSeconds', 'longBreakDurationSeconds'
+        ])
+        && validMetadata(data, 1)
+        && data.focusDurationSeconds is int
+        && data.focusDurationSeconds > 0
+        && data.shortBreakDurationSeconds is int
+        && data.shortBreakDurationSeconds > 0
+        && data.longBreakDurationSeconds is int
+        && data.longBreakDurationSeconds > 0;
+    }
+
+    function validActiveTimer(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'status', 'mode',
+          'durationSeconds', 'remainingSeconds', 'elapsedSeconds',
+          'generation', 'writeGeneration', 'startedAt', 'segmentStartedAt',
+          'endsAt', 'courseId', 'taskId', 'runId'
+        ])
+        && validMetadata(data, 1)
+        && data.status in ['idle', 'running', 'paused']
+        && data.mode in ['focus', 'shortBreak', 'longBreak']
+        && data.durationSeconds is int
+        && data.durationSeconds > 0
+        && data.remainingSeconds is int
+        && data.remainingSeconds >= 0
+        && data.elapsedSeconds is int
+        && data.elapsedSeconds >= 0
+        && data.generation is int
+        && data.generation >= 0
+        && data.writeGeneration is int
+        && data.writeGeneration >= 0
+        && (data.startedAt == null || data.startedAt is timestamp)
+        && (data.segmentStartedAt == null || data.segmentStartedAt is timestamp)
+        && (data.endsAt == null || data.endsAt is timestamp)
+        && (data.courseId == null || data.courseId is string)
+        && (data.taskId == null || data.taskId is string)
+        && (data.runId == null || data.runId is string);
+    }
+
+    function timerDurationMatchesPreferences(timer, preferences) {
+      return validTimerPreferences(preferences)
+        && (
+          (timer.mode == 'focus'
+            && timer.durationSeconds == preferences.focusDurationSeconds)
+          || (timer.mode == 'shortBreak'
+            && timer.durationSeconds == preferences.shortBreakDurationSeconds)
+          || (timer.mode == 'longBreak'
+            && timer.durationSeconds == preferences.longBreakDurationSeconds)
+        );
+    }
+
+    function validConversation(data) {
+      return hasExactKeys(data, ['schemaVersion', 'createdAt', 'updatedAt', 'title'])
+        && validMetadata(data, 1)
+        && data.title is string;
+    }
+
+    function validMessage(data) {
+      return hasExactKeys(data, [
+          'schemaVersion', 'createdAt', 'updatedAt', 'role', 'content'
+        ])
+        && validMetadata(data, 1)
+        && data.role in ['user', 'assistant']
+        && data.content is string;
+    }
+
+    function activeCourseBefore(uid, courseId) {
+      let data = get(
+        /databases/$(database)/documents/users/$(uid)/courses/$(courseId)
+      ).data;
+      return activeCourseTarget(data);
+    }
+
+    function activeCourseAfter(uid, courseId) {
+      let data = getAfter(
+        /databases/$(database)/documents/users/$(uid)/courses/$(courseId)
+      ).data;
+      return activeCourseTarget(data);
+    }
+
+    function activeTaskBefore(uid, taskId) {
+      let data = get(
+        /databases/$(database)/documents/users/$(uid)/tasks/$(taskId)
+      ).data;
+      return activeTaskTarget(data);
+    }
+
+    function activeTaskAfter(uid, taskId) {
+      let data = getAfter(
+        /databases/$(database)/documents/users/$(uid)/tasks/$(taskId)
+      ).data;
+      return activeTaskTarget(data);
+    }
+
+    function optionalCourseBefore(uid, courseId) {
+      return courseId == null || activeCourseBefore(uid, courseId);
+    }
+
+    function optionalCourseAfter(uid, courseId) {
+      return courseId == null || activeCourseAfter(uid, courseId);
+    }
+
+    function taskCourseBefore(uid, taskId, courseId) {
+      let task = get(
+        /databases/$(database)/documents/users/$(uid)/tasks/$(taskId)
+      ).data;
+      return activeTaskTarget(task)
+        && task.courseId == courseId
+        && optionalCourseBefore(uid, courseId);
+    }
+
+    function taskCourseAfter(uid, taskId, courseId) {
+      let task = getAfter(
+        /databases/$(database)/documents/users/$(uid)/tasks/$(taskId)
+      ).data;
+      return activeTaskTarget(task)
+        && task.courseId == courseId
+        && optionalCourseAfter(uid, courseId);
+    }
+
+    function plannerReferencesBefore(uid, data) {
+      return data.taskId == null
+        ? optionalCourseBefore(uid, data.courseId)
+        : taskCourseBefore(uid, data.taskId, data.courseId);
+    }
+
+    function plannerReferencesAfter(uid, data) {
+      return data.taskId == null
+        ? optionalCourseAfter(uid, data.courseId)
+        : taskCourseAfter(uid, data.taskId, data.courseId);
+    }
+
+    function timerReferencesBefore(uid, data) {
+      return data.taskId == null
+        ? optionalCourseBefore(uid, data.courseId)
+        : taskCourseBefore(uid, data.taskId, data.courseId);
+    }
+
+    function timerReferencesAfter(uid, data) {
+      return data.taskId == null
+        ? optionalCourseAfter(uid, data.courseId)
+        : taskCourseAfter(uid, data.taskId, data.courseId);
+    }
+
+    function validConversationBefore(uid, conversationId) {
+      let data = get(
+        /databases/$(database)/documents/users/$(uid)/assistantConversations/$(conversationId)
+      ).data;
+      return validConversation(data);
+    }
+
+    match /users/{uid} {
+      allow get: if owns(uid) && validProfile(resource.data);
+      allow list: if false;
+      allow create: if owns(uid)
+        && validProfile(request.resource.data)
+        && createdNow(request.resource.data);
+      allow update: if owns(uid)
+        && validProfile(resource.data)
+        && validProfile(request.resource.data)
+        && updatedNow(request.resource.data, resource.data)
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(['displayName', 'updatedAt']);
+      allow delete: if false;
+
+      match /courses/{courseId} {
+        allow get: if owns(uid) && validCourse(resource.data);
+        allow list: if owns(uid) && listableCourse(resource.data);
+        allow create: if owns(uid)
+          && validCourse(request.resource.data)
+          && createdNow(request.resource.data)
+          && activeLifecycle(request.resource.data);
+        allow update: if owns(uid)
+          && validCourse(resource.data)
+          && activeLifecycle(resource.data)
+          && validCourse(request.resource.data)
+          && activeLifecycle(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.deletionStatus == resource.data.deletionStatus
+          && request.resource.data.deletionJobId == resource.data.deletionJobId
+          && request.resource.data.deletionStartedAt == resource.data.deletionStartedAt
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'code', 'description', 'instructor', 'tint',
+            'sortOrder', 'updatedAt'
+          ]);
+        allow delete: if false;
+      }
+
+      match /lessons/{lessonId} {
+        allow get: if owns(uid);
+        allow list: if owns(uid);
+        allow create: if owns(uid)
+          && validLesson(request.resource.data)
+          && createdNow(request.resource.data)
+          && activeCourseAfter(uid, request.resource.data.courseId);
+        allow update: if owns(uid)
+          && validLesson(resource.data)
+          && validLesson(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'courseId', 'title', 'description', 'content', 'completed',
+            'sortOrder', 'updatedAt'
+          ])
+          && activeCourseBefore(uid, resource.data.courseId)
+          && activeCourseAfter(uid, request.resource.data.courseId);
+        allow delete: if owns(uid)
+          && validLesson(resource.data)
+          && activeCourseBefore(uid, resource.data.courseId);
+      }
+
+      match /materials/{materialId} {
+        allow get: if owns(uid);
+        allow list: if owns(uid);
+        allow create: if owns(uid)
+          && validMaterial(request.resource.data)
+          && createdNow(request.resource.data)
+          && optionalCourseAfter(uid, request.resource.data.courseId);
+        allow update: if owns(uid)
+          && validMaterial(resource.data)
+          && validMaterial(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'title', 'content', 'fileName', 'courseId', 'sortOrder', 'updatedAt'
+          ])
+          && optionalCourseBefore(uid, resource.data.courseId)
+          && optionalCourseAfter(uid, request.resource.data.courseId);
+        allow delete: if owns(uid)
+          && validMaterial(resource.data)
+          && optionalCourseBefore(uid, resource.data.courseId);
+      }
+
+      match /tasks/{taskId} {
+        allow get: if owns(uid) && validTask(resource.data);
+        allow list: if owns(uid) && listableTask(resource.data);
+        allow create: if owns(uid)
+          && validTask(request.resource.data)
+          && createdNow(request.resource.data)
+          && activeLifecycle(request.resource.data)
+          && optionalCourseAfter(uid, request.resource.data.courseId);
+        allow update: if owns(uid)
+          && validTask(resource.data)
+          && activeLifecycle(resource.data)
+          && validTask(request.resource.data)
+          && activeLifecycle(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.deletionStatus == resource.data.deletionStatus
+          && request.resource.data.deletionJobId == resource.data.deletionJobId
+          && request.resource.data.deletionStartedAt == resource.data.deletionStartedAt
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'title', 'description', 'dueAt', 'dueDate', 'timeZoneId',
+            'priority', 'courseId', 'completed', 'completedAt',
+            'sortOrder', 'updatedAt'
+          ])
+          && optionalCourseBefore(uid, resource.data.courseId)
+          && optionalCourseAfter(uid, request.resource.data.courseId);
+        allow delete: if false;
+      }
+
+      match /events/{eventId} {
+        allow get: if owns(uid);
+        allow list: if owns(uid);
+        allow create: if owns(uid)
+          && validEvent(request.resource.data)
+          && createdNow(request.resource.data)
+          && optionalCourseAfter(uid, request.resource.data.courseId);
+        allow update: if owns(uid)
+          && validEvent(resource.data)
+          && validEvent(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'title', 'description', 'startAt', 'endAt', 'timeZoneId',
+            'type', 'courseId', 'location', 'color',
+            'startTimeDisambiguation', 'endTimeDisambiguation', 'updatedAt'
+          ])
+          && optionalCourseBefore(uid, resource.data.courseId)
+          && optionalCourseAfter(uid, request.resource.data.courseId);
+        allow delete: if owns(uid)
+          && validEvent(resource.data)
+          && optionalCourseBefore(uid, resource.data.courseId);
+      }
+
+      match /plannerBlocks/{blockId} {
+        allow get: if owns(uid);
+        allow list: if owns(uid);
+        allow create: if owns(uid)
+          && validPlannerBlock(request.resource.data)
+          && createdNow(request.resource.data)
+          && plannerReferencesAfter(uid, request.resource.data);
+        allow update: if owns(uid)
+          && validPlannerBlock(resource.data)
+          && validPlannerBlock(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'title', 'startAt', 'endAt', 'timeZoneId', 'taskId',
+            'courseId', 'completed', 'sortOrder', 'updatedAt'
+          ])
+          && plannerReferencesBefore(uid, resource.data)
+          && plannerReferencesAfter(uid, request.resource.data);
+        allow delete: if owns(uid)
+          && validPlannerBlock(resource.data)
+          && plannerReferencesBefore(uid, resource.data);
+      }
+
+      match /focusSessions/{sessionId} {
+        allow get: if owns(uid);
+        allow list: if owns(uid);
+        allow create: if owns(uid)
+          && validFocusSession(request.resource.data)
+          && createdNow(request.resource.data)
+          && plannerReferencesAfter(uid, request.resource.data);
+        allow update: if false;
+        allow delete: if false;
+      }
+
+      match /settings/preferences {
+        allow get: if owns(uid) && validPreferences(resource.data);
+        allow list: if false;
+        allow create: if owns(uid)
+          && validPreferences(request.resource.data)
+          && createdNow(request.resource.data)
+          && defaultConsent(request.resource.data);
+        allow update: if owns(uid)
+          && validPreferences(resource.data)
+          && validPreferences(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'displayName', 'timeFormat', 'firstDayOfWeek', 'timeZoneId',
+            'aiWorkspaceContextConsent', 'consentedAt', 'revokedAt',
+            'consentVersion', 'updatedAt'
+          ])
+          && validConsentTransition(resource.data, request.resource.data);
+        allow delete: if false;
+      }
+
+      match /settings/timerPreferences {
+        allow get: if owns(uid) && validTimerPreferences(resource.data);
+        allow list: if false;
+        allow create: if owns(uid)
+          && validTimerPreferences(request.resource.data)
+          && createdNow(request.resource.data);
+        allow update: if owns(uid)
+          && validTimerPreferences(resource.data)
+          && validTimerPreferences(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'focusDurationSeconds', 'shortBreakDurationSeconds',
+            'longBreakDurationSeconds', 'updatedAt'
+          ]);
+        allow delete: if false;
+      }
+
+      match /settings/focusTimer {
+        allow get: if owns(uid) && validActiveTimer(resource.data);
+        allow list: if false;
+        allow create: if owns(uid)
+          && validActiveTimer(request.resource.data)
+          && createdNow(request.resource.data)
+          && request.resource.data.generation == 0
+          && request.resource.data.writeGeneration == 0
+          && timerDurationMatchesPreferences(
+            request.resource.data,
+            getAfter(
+              /databases/$(database)/documents/users/$(uid)/settings/timerPreferences
+            ).data
+          )
+          && timerReferencesAfter(uid, request.resource.data);
+        allow update: if owns(uid)
+          && validActiveTimer(resource.data)
+          && validActiveTimer(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.generation == resource.data.generation
+          && request.resource.data.writeGeneration == resource.data.generation
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'mode', 'durationSeconds', 'remainingSeconds',
+            'elapsedSeconds', 'writeGeneration', 'startedAt',
+            'segmentStartedAt', 'endsAt', 'courseId', 'taskId',
+            'runId', 'updatedAt'
+          ])
+          && timerReferencesBefore(uid, resource.data)
+          && timerReferencesAfter(uid, request.resource.data);
+        allow delete: if false;
+      }
+
+      match /assistantConversations/{conversationId} {
+        allow get: if owns(uid) && validConversation(resource.data);
+        allow list: if owns(uid);
+        allow create: if owns(uid)
+          && validConversation(request.resource.data)
+          && createdNow(request.resource.data);
+        allow update: if owns(uid)
+          && validConversation(resource.data)
+          && validConversation(request.resource.data)
+          && updatedNow(request.resource.data, resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'title', 'updatedAt'
+          ]);
+        allow delete: if false;
+
+        match /messages/{messageId} {
+          allow get: if owns(uid);
+          allow list: if owns(uid);
+          allow create: if owns(uid)
+            && validMessage(request.resource.data)
+            && createdNow(request.resource.data)
+            && validConversationBefore(uid, conversationId);
+          allow update: if false;
+          allow delete: if false;
+        }
+      }
+
+      match /courseDeletionJobs/{jobId} {
+        allow read, write: if false;
+      }
+
+      match /taskDeletionJobs/{jobId} {
+        allow read, write: if false;
+      }
+
+      match /migrationJobs/{migrationId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

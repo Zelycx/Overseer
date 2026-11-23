@@ -314,6 +314,33 @@ body { font-family: var(--font-sans); font-size: var(--text-base); line-height: 
 @keyframes section-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes notice-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
+/* Android identity applied across the responsive browser workspace. */
+.app-shell, .app-main, .page-content, .landing-page { background: var(--background); color: var(--text-primary); }
+.sidebar { background: var(--navy); }
+.app-header { border-color: var(--border); background: color-mix(in srgb, var(--background) 96%, transparent); }
+.card, .auth-card, .command-dialog { border-color: var(--border); background-color: var(--surface); border-radius: 16px; box-shadow: var(--shadow-card); }
+.button, .filter-chip, .week-day, .profile-avatar, .icon-button { border-radius: 9px; }
+.brand__word, .app-header h1, .dashboard-welcome-row h2, .workspace-page h2, .workspace-page h3 { color: var(--text-primary); font-family: var(--font-display); }
+.nav-group__title { color: color-mix(in srgb, white 70%, var(--navy)); }
+.nav-link--active, .nav-link--active:hover { background: rgb(255 255 255 / 13%); }
+.nav-link--active::before { background-color: var(--accent-color); }
+.nav-link--active svg { color: var(--accent-color); background-color: transparent; }
+.profile-avatar, .sidebar-tip__icon { color: var(--accent-foreground); background: var(--accent-color); }
+.day-plan-card { border-color: var(--navy); background: linear-gradient(135deg, var(--navy), var(--navy-soft)); }
+.day-plan-card .eyebrow--light, .day-plan-card__bottom, .day-plan-card__bottom small { color: rgb(255 255 255 / 82%); }
+.day-plan-card__bottom strong { color: white; }
+.day-plan-ornament span { background: var(--accent-color); }
+.focus-summary-card, .agenda-card, .tasks-card, .course-card { background: var(--surface); }
+.agenda-event strong, .task-info strong, .course-card__title, .library-course__title, .schedule-event-copy > strong { color: var(--text-primary); }
+.agenda-row, .task-row, .schedule-event-row, .planner-row, .history-row, .activity-row { border-color: var(--border); }
+.agenda-marker--lime, .schedule-color-dot--lime, .activity-dot { background: var(--accent-color); }
+.task-check { border-color: color-mix(in srgb, var(--navy) 34%, var(--border)); }
+.task-check--done { color: var(--navy); border-color: var(--accent-color); background: var(--accent-color); }
+.timer-ring__progress { stroke: var(--accent-color); }
+.import-dropzone { background: color-mix(in srgb, var(--accent-soft) 48%, var(--surface)); }
+.inline-notice, .storage-error-banner { border-radius: 9px; }
+.event-repeat-toggle { margin-top: 8px; }
+
 /* Appearance settings */
 .appearance-card { gap: 22px; }
 .appearance-section-heading h3 { margin: 4px 0 5px; font-size: 21px; }
@@ -600,4 +627,115 @@ body { font-family: var(--font-sans); font-size: var(--text-base); line-height: 
   .day-plan-card__top h3 { position: relative; z-index: 1; max-width: min(100%, 330px); font-size: 25px; }
   .day-plan-card__bottom { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 11px; }
   .day-plan-card__bottom > .button { flex: 0 0 auto; margin-left: 0; }
+}
+
+/* Android's Material identity, carried through the responsive Web workspace. */
+:root {
+  --background: #fdf8ff;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --subtle-surface: #f5f2f8;
+  --text-primary: #131d44;
+  --text-secondary: #515b78;
+  --text-muted: #68718a;
+  --border: #e5e2ea;
+  --navy: #131d44;
+  --navy-strong: #0d1535;
+  --navy-soft: #29345e;
+  --accent-color: #c1ff00;
+  --accent-soft: #f1f8d8;
+  --accent-foreground: #131d44;
+  --radius-md: 16px;
+  --shadow-card: 0 2px 9px rgb(19 29 68 / 7%);
+}
+
+body { color: var(--text-primary); background: var(--background); font-family: Roboto, Arial, ui-sans-serif, system-ui, sans-serif; }
+.app-shell, .app-main, .page-content, .dashboard-page, .workspace-page { background: var(--background); }
+.sidebar { width: 254px; padding: 24px 16px 16px; background: var(--navy); }
+.app-main { margin-left: 254px; }
+.sidebar .brand__word { font-size: 25px; font-weight: 700; letter-spacing: -.06em; }
+.workspace-switcher, .sidebar-tip { border-radius: 14px; }
+.nav-group { margin-bottom: 24px; }
+.nav-group__title { color: #c4cadd; font-size: 11px; letter-spacing: .1em; }
+.nav-link { min-height: 46px; padding: 0 12px; border-radius: 12px; font-size: 14px; }
+.nav-link--active, .nav-link--active:hover { background: rgb(255 255 255 / 12%); }
+.nav-link--active::before { left: -16px; width: 4px; height: 24px; }
+.app-header { min-height: 72px; padding-inline: clamp(20px, 3vw, 42px); border-color: var(--border); background: rgb(253 248 255 / 96%); }
+.app-header h1 { font-size: 18px; font-weight: 700; letter-spacing: -.025em; }
+.header-eyebrow, .connection-status, .ai-status { color: var(--text-secondary); font-size: 12px; }
+.page-content { width: min(100%, 1500px); padding: 34px clamp(20px, 3vw, 42px) 48px; }
+.section-heading { align-items: center; margin-bottom: 15px; }
+.section-heading h2 { color: var(--text-primary); font-size: 20px; font-weight: 700; letter-spacing: -.025em; }
+.section-heading p, .text-link, .eyebrow { color: var(--text-secondary); font-size: 12px; }
+.card, .auth-card, .command-dialog { border-color: var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-card); }
+.card--small { padding: 14px 20px; }
+.card--medium { padding: 22px; }
+.card--large { padding: 28px; }
+.button { min-height: 44px; border-radius: 12px; font-size: 14px; font-weight: 650; }
+.button--small { min-height: 38px; border-radius: 10px; font-size: 13px; }
+.button--primary { color: #fdf8ff; border-color: var(--navy); background: var(--navy); }
+.button--secondary, .button--outline { color: var(--navy); border-color: var(--border); background: var(--surface); }
+.button--lime { color: var(--navy); border-color: var(--accent-color); background: var(--accent-color); }
+.button--secondary:hover, .button--outline:hover { border-color: var(--navy); background: var(--subtle-surface); }
+.badge { border-radius: 8px; font-size: 10px; }
+.badge--neutral, .badge--soft { color: var(--text-secondary); background: var(--subtle-surface); }
+.dashboard-page { gap: 28px; }
+.dashboard-welcome-row { align-items: center; }
+.dashboard-date { color: var(--text-secondary); font-size: 13px; }
+.dashboard-welcome-row h2 { color: var(--text-primary); font-size: clamp(27px, 3vw, 34px); font-weight: 700; letter-spacing: -.035em; }
+.dashboard-subtitle { color: var(--text-secondary); font-size: 14px; }
+.day-plan-card { min-height: 250px; border-radius: 20px; background: linear-gradient(140deg, var(--navy), var(--navy-soft)); box-shadow: 0 10px 24px rgb(19 29 68 / 15%); }
+.day-plan-card__top h3 { max-width: 430px; font-size: clamp(25px, 3vw, 34px); line-height: 1.18; letter-spacing: -.035em; }
+.eyebrow--light { color: #d9def0; }
+.plan-metric strong { font-size: 15px; }
+.plan-metric small { color: #d9def0; font-size: 11px; }
+.focus-summary-card, .agenda-card, .tasks-card, .course-card { background: var(--surface); }
+.focus-value { color: var(--text-primary); font-size: 32px; }
+.muted-copy, .empty-copy { color: var(--text-secondary); font-size: 13px; }
+.agenda-row, .task-row, .schedule-event-row, .planner-row, .history-row, .activity-row { min-height: 68px; border-color: var(--border); }
+.agenda-time strong, .task-info strong, .agenda-event strong, .course-card__title,
+.schedule-event-copy > strong, .planner-row__copy strong, .managed-task__main > strong,
+.library-course__title, .material-card__top strong, .lesson-row__copy > a,
+.progress-course a, .progress-course > strong, .history-row strong { color: var(--text-primary); font-size: 13px; }
+.agenda-time span, .task-info span, .task-meta, .agenda-event span, .course-card > p,
+.planner-time, .planner-row__copy small, .managed-task__meta, .material-preview,
+.lesson-row__copy > small, .history-row small, .activity-row small { color: var(--text-secondary); font-size: 11px; }
+.agenda-marker--lime, .schedule-color-dot--lime, .activity-dot { background: var(--accent-color); }
+.agenda-add, .task-add { min-height: 44px; color: var(--navy); font-size: 12px; }
+.course-card { border-radius: 16px; }
+.course-icon--lavender, .course-icon--mint, .course-icon--sand { color: var(--navy); background: var(--accent-soft); }
+.dashboard-footer-callout { border-color: var(--border); border-radius: 14px; background: var(--subtle-surface); }
+.dashboard-footer-callout strong, .dashboard-footer-callout span { color: var(--text-primary); font-size: 12px; }
+.form-field { color: var(--text-secondary); font-size: 13px; }
+.form-field > input, .form-field > select, .form-field > textarea, .filter-row select,
+.search-field, .date-input-label input, .schedule-day-picker input, .material-card__footer select {
+  color: var(--text-primary); border-color: var(--border); border-radius: 10px; background: var(--surface); font-size: 14px;
+}
+.form-field > input:focus, .form-field > select:focus, .form-field > textarea:focus,
+.filter-row select:focus, .search-field:focus-within, .date-input-label input:focus,
+.schedule-day-picker input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgb(193 255 0 / 24%); }
+.filter-chip, .week-day { color: var(--text-secondary); border-color: var(--border); border-radius: 10px; background: var(--surface); font-size: 12px; }
+.filter-chip--active, .week-day--active { color: var(--navy); border-color: var(--accent-color); background: var(--accent-soft); }
+.week-day--today strong { color: var(--navy); background: var(--accent-soft); }
+.managed-task__main > p, .schedule-event-copy p, .schedule-event-copy small,
+.course-detail-card > p, .lesson-description, .assistant-notice > p:not(.eyebrow) { color: var(--text-secondary); font-size: 12px; }
+.planner-task-indicator { background: var(--accent-color); }
+.material-file-icon, .history-icon, .assistant-icon, .auth-icon { color: var(--navy); background: var(--accent-soft); }
+.import-dropzone { border-color: var(--border); background: var(--subtle-surface); }
+.timer-card { background: radial-gradient(circle at 50% 45%, var(--surface) 0, var(--surface) 48%, var(--subtle-surface) 100%); }
+.timer-ring { border-color: var(--border); border-left-color: var(--accent-color); border-top-color: var(--accent-soft); }
+.timer-ring > div > span, .focus-stat-card > strong, .stat-grid strong { color: var(--text-primary); }
+.focus-mode-help span { color: var(--text-secondary); background: var(--subtle-surface); }
+.progress-bar { background: var(--border); }
+.settings-danger { border-color: #e7c9c2; }
+.dashboard-footer-callout, .workspace-page .editor-card { border-radius: 16px; }
+
+@media (max-width: 1100px) {
+  .sidebar { width: 230px; }
+  .app-main { margin-left: 230px; }
+}
+@media (max-width: 760px) {
+  .sidebar { width: min(300px, calc(100vw - 52px)); }
+  .app-main { margin-left: 0; }
+  .page-content { padding: 26px 18px 38px; }
 }

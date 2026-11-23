@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
 import type { AppData, FocusSession, FocusTimer } from '../types/app'
 import { createEmptyData, createId, loadAppData, saveAppData } from '../data/storage'
+import { useAuth } from './AuthContext'
 
 type Action =
   | { type: 'patch'; patch: Partial<AppData> }
@@ -37,15 +38,74 @@ interface AppDataContextValue {
 const AppDataContext = createContext<AppDataContextValue | null>(null)
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const [data, dispatch] = useReducer(reducer, undefined, loadAppData)
+  const { user } = useAuth()
+  const userId = user?.uid ?? null
+
+  return <UserAppDataProvider key={userId ?? 'anonymous'} userId={userId}>{children}</UserAppDataProvider>
+}
+
+function UserAppDataProvider({ children, userId }: { children: ReactNode; userId: string | null }) {
+  const [data, dispatch] = useReducer(reducer, userId, loadAppData)
   const [storageError, setStorageError] = useState<string | null>(null)
   const update = useCallback((patch: Partial<AppData>) => dispatch({ type: 'patch', patch }), [])
   const importData = useCallback((imported: AppData) => dispatch({ type: 'import', data: imported }), [])
   const resetData = useCallback(() => dispatch({ type: 'reset' }), [])
 
   useEffect(() => {
-    try { saveAppData(data); setStorageError(null) } catch (error) { console.error('Unable to save local Overseer data', error); setStorageError('Overseer could not save changes in this browser. Export a backup and free local storage space, then try again.') }
-  }, [data])
+    if (!userId) return
+    let active = true
+    let unsubscribe: (() => void) | undefined
+    void import('../firebase/client').then(({ getFirebaseServices }) => {
+      if (!active) return
+      const { auth, firestore } = getFirebaseServices()
+      void import('../data/firestore/repositories/workspace').then(({ subscribeWorkspace }) => {
+        if (!active) return
+        unsubscribe = subscribeWorkspace(
+          auth,
+          firestore,
+          (patch) => {
+            if (active) dispatch({ type: 'patch', patch })
+          },
+          (error) => {
+            if (active) setStorageError(error.message)
+          },
+        )
+      }).catch((error: unknown) => {
+        if (active) setStorageError(error instanceof Error ? error.message : 'Unable to start cloud workspace synchronization.')
+      })
+    }).catch((error: unknown) => {
+      if (active) setStorageError(error instanceof Error ? error.message : 'Firebase workspace synchronization is unavailable.')
+    })
+    return () => {
+      active = false
+      unsubscribe?.()
+    }
+  }, [userId])
+
+  useEffect(() => {
+    try { saveAppData(data, userId); setStorageError(null) } catch (error) { console.error('Unable to save local Overseer data', error); setStorageError('Overseer could not save changes in this browser. Export a backup and free local storage space, then try again.') }
+  }, [data, userId])
+
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+    void import('../firebase/client').then(async ({ getFirebaseServices }) => {
+      if (!active) return
+      const { auth, firestore } = getFirebaseServices()
+      const workspace = await import('../data/firestore/repositories/workspace')
+      await Promise.all(data.courses.map((course) => workspace.saveCourse(auth, firestore, course)))
+      await Promise.all(data.lessons.map((lesson) => workspace.saveLesson(auth, firestore, lesson)))
+      await Promise.all(data.materials.map((material) => workspace.saveMaterial(auth, firestore, material)))
+      await Promise.all(data.tasks.map((task) => workspace.saveTask(auth, firestore, task, data.preferences.timeZoneId)))
+      await Promise.all(data.events.map((event) => workspace.saveEvent(auth, firestore, event, data.preferences.timeZoneId)))
+      await Promise.all(data.plannerBlocks.map((block) => workspace.savePlannerBlock(auth, firestore, block, data.preferences.timeZoneId)))
+      await Promise.all(data.focusSessions.map((session) => workspace.saveFocusSession(auth, firestore, session)))
+      await workspace.saveFocusTimer(auth, firestore, data.focusTimer)
+    }).catch((error: unknown) => {
+      if (active) setStorageError(error instanceof Error ? error.message : 'Unable to synchronize workspace changes.')
+    })
+    return () => { active = false }
+  }, [data.courses, data.lessons, data.materials, data.tasks, data.events, data.plannerBlocks, data.focusSessions, data.focusTimer, data.preferences.timeZoneId, userId])
 
   useLayoutEffect(() => {
     const root = document.documentElement
@@ -60,7 +120,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       root.dataset.reducedMotion = String(data.preferences.reducedMotion)
       root.style.colorScheme = dark ? 'dark' : 'light'
       const background = getComputedStyle(root).getPropertyValue('--background').trim()
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background || (dark ? '#101921' : '#f5f4ed'))
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background || (dark ? '#101921' : '#fdf8ff'))
     }
     applyAppearance()
     systemDark.addEventListener('change', applyAppearance)

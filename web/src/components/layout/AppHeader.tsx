@@ -1,7 +1,8 @@
-import { CircleUserRound, Command, Menu, Plus, Wifi, WifiOff, X } from 'lucide-react'
+import { CircleUserRound, Command, LogOut, Menu, Plus, Wifi, WifiOff, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { pageDetails } from '../../app/navigation'
+import { useAuth } from '../../app/AuthContext'
 import { useAppData } from '../../app/AppDataContext'
 
 type AppHeaderProps = {
@@ -28,6 +29,8 @@ function useOnlineStatus() {
 
 export default function AppHeader({ onMenuClick, onCommandClick, menuOpen }: AppHeaderProps) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { signOut, actionInProgress } = useAuth()
   const { data } = useAppData()
   const online = useOnlineStatus()
   const shortcutLabel = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'
@@ -36,6 +39,9 @@ export default function AppHeader({ onMenuClick, onCommandClick, menuOpen }: App
     : pathname.startsWith('/lessons/')
       ? { title: 'Lesson', eyebrow: 'Your study library' }
       : { title: 'Workspace', eyebrow: 'Overseer' })
+  const handleSignOut = async () => {
+    if (await signOut()) navigate('/', { replace: true })
+  }
 
   return (
     <header className="app-header">
@@ -69,6 +75,9 @@ export default function AppHeader({ onMenuClick, onCommandClick, menuOpen }: App
           <span className="profile-avatar">{data.preferences.displayName ? data.preferences.displayName.trim().slice(0, 2).toUpperCase() : <CircleUserRound size={17} aria-hidden="true" />}</span>
           <span className="profile-name">{data.preferences.displayName || 'Settings'}</span>
         </Link>
+        <button className="icon-button" type="button" onClick={() => void handleSignOut()} disabled={actionInProgress} aria-label="Sign out" title="Sign out">
+          <LogOut size={17} />
+        </button>
       </div>
     </header>
   )
