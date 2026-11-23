@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactElement } from 'react'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, FileUp, Flame, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { motion, useReducedMotion } from 'motion/react'
+import { useReducedMotion } from 'motion/react'
 import { useAppData } from '../app/AppDataContext'
-import { addDays, durationLabel, formatDate, formatTime, isValidTime, localDateKey, parseLocalDate, startOfWeek } from '../data/dates'
-import { createId, loadLegacyAppData, parseImportData } from '../data/storage'
+import { addDays, durationLabel, eventOccursOnDate, formatDate, formatTime, isValidTime, localDateKey, parseLocalDate, startOfWeek } from '../data/dates'
+import { createId, loadLegacyAppData, mergeAppData, parseImportData, STORAGE_VERSION } from '../data/storage'
 import { saveUserPreferences, subscribeUserPreferences } from '../data/firestore/repositories/preferences'
-import type { Course, EventColor, EventType, FocusMode, Lesson, PlannerBlock, Priority, ScheduleEvent, StudyMaterial, Task } from '../types/app'
+import type { AccentColor, AppearanceMode, AppearancePreset, AppData, Course, EventColor, EventType, FocusMode, LayoutDensity, Lesson, PlannerBlock, Priority, ScheduleEvent, StudyMaterial, Task, UserPreferences } from '../types/app'
 import Badge from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -461,7 +461,7 @@ function SettingsPage() {
           setCloudPreferenceStatus(fromCache ? 'offline' : 'ready')
           if (remote) {
             setName(remote.displayName)
-            update({ preferences: { displayName: remote.displayName, timeFormat: remote.timeFormat, firstDayOfWeek: remote.firstDayOfWeek, timeZoneId: remote.timeZoneId } })
+            update({ preferences: { ...data.preferences, displayName: remote.displayName, timeFormat: remote.timeFormat, firstDayOfWeek: remote.firstDayOfWeek, timeZoneId: remote.timeZoneId } })
           }
         }, (cause) => {
           if (!active) return
@@ -560,7 +560,7 @@ function SettingsPage() {
     <Card className="settings-card" padding="large"><h3>Backup and transfer</h3><p className="muted-copy">Export a versioned JSON backup or merge one from Android or another browser. Existing records and local preferences stay in place.</p><div className="form-actions"><Button variant="secondary" onClick={exportData}>Export application data</Button><label className="button button--secondary button--medium">Import JSON backup<input className="visually-hidden" type="file" accept="application/json,.json" onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); e.currentTarget.value = '' }} /></label></div></Card>
     {hasLegacyData && <Card className="settings-card" padding="large"><h3>Previous browser workspace</h3><p className="muted-copy">An older workspace without an account association is still stored in this browser. It was not copied into this account. Export it to review or import it yourself; only do that if you own the data.</p><Button variant="secondary" onClick={exportLegacyData}>Export previous workspace</Button></Card>}
     <Card className="settings-card settings-danger" padding="large"><h3>Data management</h3><p className="muted-copy">Reset clears local workspace records and restores a blank workspace. This cannot be undone.</p><Button variant="secondary" onClick={() => setResetOpen(true)}><Trash2 size={15} /> Reset local data</Button></Card>
-    <AlertDialog open={Boolean(pendingImport)} onOpenChange={(open) => { if (!open) setPendingImport(null) }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Merge this workspace backup?</AlertDialogTitle><AlertDialogDescription>Imported records will be added to this workspace. Existing records, preferences, and timer state stay in place. Conflicting IDs are kept as separate records.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmImport}>Merge backup</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    <AlertDialog open={Boolean(pendingImport)} onOpenChange={(open: boolean) => { if (!open) setPendingImport(null) }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Merge this workspace backup?</AlertDialogTitle><AlertDialogDescription>Imported records will be added to this workspace. Existing records, preferences, and timer state stay in place. Conflicting IDs are kept as separate records.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmImport}>Merge backup</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     <AlertDialog open={resetOpen} onOpenChange={setResetOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reset all local data?</AlertDialogTitle><AlertDialogDescription>This permanently deletes your courses, lessons, materials, tasks, schedule, plans, and focus history from this browser. Overseer will return to a blank Studio workspace.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep my data</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={reset}>Reset workspace</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>
 }

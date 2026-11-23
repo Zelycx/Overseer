@@ -37,7 +37,7 @@ export function WeeklyFocusTimeChart({ data }: { data: FocusChartPoint[] }) {
         <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
         <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
         <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} tickFormatter={(value: number) => `${value}m`} />
-        <Tooltip contentStyle={tooltipStyle} formatter={(value) => [durationLabel(Number(value) * 60), 'Focus time']} />
+        <Tooltip contentStyle={tooltipStyle} formatter={(value: unknown) => [durationLabel(Number(value) * 60), 'Focus time']} />
         <Bar dataKey="minutes" name="Focus time" fill="var(--chart-primary)" radius={[5, 5, 0, 0]} maxBarSize={36} isAnimationActive={animate} animationDuration={620} />
       </BarChart>
     </ResponsiveContainer></div> : <ChartEmpty>No completed focus sessions this week yet.</ChartEmpty>}
@@ -54,7 +54,7 @@ export function FocusActivityTrendChart({ data }: { data: FocusChartPoint[] }) {
         <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
         <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} interval={1} />
         <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} tickFormatter={(value: number) => `${value}m`} />
-        <Tooltip contentStyle={tooltipStyle} formatter={(value) => [durationLabel(Number(value) * 60), 'Focus time']} />
+        <Tooltip contentStyle={tooltipStyle} formatter={(value: unknown) => [durationLabel(Number(value) * 60), 'Focus time']} />
         <Line type="monotone" dataKey="minutes" name="Focus time" stroke="var(--chart-primary)" strokeWidth={2.5} dot={{ r: 3, fill: 'var(--chart-primary)' }} activeDot={{ r: 5 }} isAnimationActive={animate} animationDuration={620} />
       </LineChart>
     </ResponsiveContainer></div> : <ChartEmpty>No focus activity recorded in the last two weeks.</ChartEmpty>}
@@ -70,7 +70,7 @@ export function CourseProgressChart({ data }: { data: CourseChartPoint[] }) {
         <CartesianGrid stroke="var(--chart-grid)" horizontal={false} />
         <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} tickFormatter={(value: number) => `${value}%`} />
         <YAxis type="category" dataKey="name" width={106} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-secondary)', fontSize: 10 }} />
-        <Tooltip contentStyle={tooltipStyle} formatter={(value, _name, item) => [`${value}% (${item.payload.completed}/${item.payload.total} lessons)`, 'Progress']} />
+        <Tooltip contentStyle={tooltipStyle} formatter={(value: unknown, _name: unknown, item: { payload: { completed: number; total: number } }) => [`${value}% (${item.payload.completed}/${item.payload.total} lessons)`, 'Progress']} />
         <Bar dataKey="percentage" name="Progress" fill="var(--chart-primary)" radius={[0, 5, 5, 0]} maxBarSize={26} isAnimationActive={animate} animationDuration={620} />
       </BarChart>
     </ResponsiveContainer></div> : <ChartEmpty>Create a course to see lesson progress here.</ChartEmpty>}

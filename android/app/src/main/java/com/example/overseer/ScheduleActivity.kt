@@ -23,16 +23,17 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import android.widget.Button
+import android.widget.ImageButton
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Locale
 import java.util.UUID
-import java.time.Instant
 
 class ScheduleActivity : AppCompatActivity() {
     private var eventListener: ListenerRegistration? = null
@@ -108,8 +109,6 @@ class ScheduleActivity : AppCompatActivity() {
 
     private fun renderEvents(container: LinearLayout, empty: TextView, calendar: Calendar) {
         container.removeAllViews()
-        findViewById<View>(R.id.databaseClassCard).visibility = View.GONE
-        findViewById<View>(R.id.programmingClassCard).visibility = View.GONE
 
         val dayStart = Calendar.getInstance().apply {
             timeInMillis = calendar.timeInMillis

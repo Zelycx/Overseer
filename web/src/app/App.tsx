@@ -2,10 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell'
 import RequireAuth from './RequireAuth'
-import DashboardPage from '../pages/DashboardPage'
 import AuthPage from '../pages/AuthPage'
-import LandingPage from '../pages/LandingPage'
-import WorkspacePage from '../pages/WorkspacePage'
 const DashboardPage = lazy(() => import('../pages/DashboardPage'))
 const LandingPage = lazy(() => import('../pages/LandingPage'))
 const WorkspacePage = lazy(() => import('../pages/WorkspacePage'))

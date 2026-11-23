@@ -17,7 +17,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import java.util.UUID
 import java.time.Instant
-import java.util.UUID
 import java.nio.charset.StandardCharsets
 
 class FocusActivity : AppCompatActivity() {

@@ -74,7 +74,7 @@ export default function GlobalCommandPalette({ open, onOpenChange }: { open: boo
   return <Dialog.Root open={open} onOpenChange={onOpenChange}>
     <Dialog.Portal>
       <Dialog.Overlay className="command-overlay" />
-      <Dialog.Content className="command-dialog" aria-describedby="command-description" onOpenAutoFocus={() => { openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null }} onCloseAutoFocus={(event) => { event.preventDefault(); openerRef.current?.focus() }}>
+      <Dialog.Content className="command-dialog" aria-describedby="command-description" onOpenAutoFocus={() => { openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null }} onCloseAutoFocus={(event: Event) => { event.preventDefault(); openerRef.current?.focus() }}>
         <div className="command-dialog__search"><Search size={19} aria-hidden="true" /><input ref={inputRef} autoFocus type="search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleInputKeyDown} placeholder="Search pages, courses, and lessons" aria-label="Search pages, courses, and lessons" role="combobox" aria-expanded="true" aria-controls="command-results" aria-activedescendant={matches[activeIndex] ? `command-option-${matches[activeIndex].id}` : undefined} /><kbd>ESC</kbd></div>
         <Dialog.Title className="visually-hidden">Search workspace and commands</Dialog.Title>
         <Dialog.Description id="command-description" className="visually-hidden">Navigate to a page, find a course or lesson, or run a workspace action.</Dialog.Description>

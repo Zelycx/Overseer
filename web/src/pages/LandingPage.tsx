@@ -197,7 +197,7 @@ export default function LandingPage() {
   const lidAccentsRef = useRef<SVGGElement>(null)
   const flashlightRef = useRef<HTMLSpanElement>(null)
 
-  useGSAP((_, contextSafe) => {
+  useGSAP((_: unknown, contextSafe: any) => {
     const aperture = apertureRef.current
     const contour = contourRef.current
     const accents = lidAccentsRef.current

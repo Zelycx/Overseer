@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Suspense } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
@@ -10,8 +10,13 @@ import GlobalCommandPalette from './GlobalCommandPalette'
 
 export default function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [commandOpen, setCommandOpen] = useState(false)
   const { error: authError } = useAuth()
-  const { storageError } = useAppData()
+  const { data, update, storageError } = useAppData()
+  const location = useLocation()
+  const pathname = location.pathname
+  const reduceMotion = useReducedMotion()
+  const collapsed = Boolean(data?.preferences?.sidebarCollapsed)
 
   return (
     <div className={`app-shell${collapsed ? ' app-shell--sidebar-collapsed' : ''}`}>

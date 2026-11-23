@@ -38,7 +38,19 @@ export function createId(prefix = 'item'): string {
 
 export function createEmptyData(): AppData {
   return {
-    preferences: { displayName: 'Student', timeFormat: '12h', firstDayOfWeek: 1, timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' },
+    preferences: {
+      displayName: 'Student',
+      timeFormat: '12h',
+      firstDayOfWeek: 1,
+      timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      theme: 'light',
+      appearancePreset: 'studio',
+      appearanceMode: 'system',
+      accentColor: 'olive',
+      density: 'comfortable',
+      reducedMotion: false,
+      sidebarCollapsed: false,
+    },
     courses: [], lessons: [], materials: [], tasks: [], events: [], plannerBlocks: [], focusSessions: [],
     focusTimer: { status: 'idle', mode: 'focus', durationSeconds: 25 * 60, remainingSeconds: 25 * 60, startedAt: null, segmentStartedAt: null, elapsedSeconds: 0, endsAt: null, courseId: null, taskId: null },
   }
@@ -105,22 +117,26 @@ export function validateAppData(value: unknown): value is AppData {
 }
 
 function migrateAppData(value: AppData): AppData {
-  const legacyTheme = value.preferences.theme === 'dark' ? 'dark' : 'light'
-  const preset = ['studio', 'midnight', 'paper', 'high-contrast'].includes(value.preferences.appearancePreset)
+  const legacyTheme = value.preferences?.theme === 'dark' ? 'dark' : 'light'
+  const preset = ['studio', 'midnight', 'paper', 'high-contrast'].includes(value.preferences?.appearancePreset)
     ? value.preferences.appearancePreset
     : legacyTheme === 'dark' ? 'midnight' : 'studio'
-  const appearanceMode = ['system', 'light', 'dark'].includes(value.preferences.appearanceMode)
+  const appearanceMode = ['system', 'light', 'dark'].includes(value.preferences?.appearanceMode)
     ? value.preferences.appearanceMode
     : legacyTheme
-  const accentColor = ['olive', 'blue', 'terracotta', 'violet', 'teal'].includes(value.preferences.accentColor)
+  const accentColor = ['olive', 'blue', 'terracotta', 'violet', 'teal'].includes(value.preferences?.accentColor)
     ? value.preferences.accentColor
     : 'olive'
-  const density = value.preferences.density === 'compact' ? 'compact' : 'comfortable'
+  const density = value.preferences?.density === 'compact' ? 'compact' : 'comfortable'
   return {
     ...value,
     preferences: {
       ...value.preferences,
-      timeZoneId: validTimeZone(value.preferences.timeZoneId)
+      appearancePreset: preset,
+      appearanceMode,
+      accentColor,
+      density,
+      timeZoneId: validTimeZone(value.preferences?.timeZoneId)
         ? value.preferences.timeZoneId
         : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
     },

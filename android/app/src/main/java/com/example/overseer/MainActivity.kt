@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -30,6 +31,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.example.overseer.data.firestore.AuthenticatedFirestoreRepository
 import com.example.overseer.data.firestore.CanonicalCodecs
+import com.example.overseer.data.firestore.DeletionStatus
+import com.example.overseer.data.firestore.Priority
 import com.example.overseer.data.firestore.Task
 
 class MainActivity : AppCompatActivity() {
@@ -124,12 +127,9 @@ class MainActivity : AppCompatActivity() {
         val progressBar = findViewById<ProgressBar>(R.id.progressBar)
         val progressPercentage = findViewById<TextView>(R.id.progressPercentage)
 
-
-
         // Get the task container
         val tasksContainer = findViewById<LinearLayout>(R.id.tasksContainer)
 
-        val taskCheckboxes = listOf(taskOne, taskTwo, taskThree)
         val repository = AuthenticatedFirestoreRepository(FirebaseFirestore.getInstance())
         taskListener = repository.observeCollection(
             "tasks",
@@ -143,27 +143,34 @@ class MainActivity : AppCompatActivity() {
                 progressCount.text = "$completedTasks of $totalTasks tasks completed"
                 progressBar.progress = percentage
                 progressPercentage.text = "$percentage% complete"
-                taskCheckboxes.forEachIndexed { index, checkbox ->
-                    val task = tasks.getOrNull(index)
-                    if (task == null) {
-                        checkbox.visibility = View.GONE
-                    } else {
-                        checkbox.visibility = View.VISIBLE
-                        checkbox.text = task.title
-                        checkbox.setOnCheckedChangeListener(null)
-                        checkbox.isChecked = task.completed
-                        checkbox.setOnCheckedChangeListener { _, isChecked ->
-                            val updated = task.copy(
-                                completed = isChecked,
-                                completedAt = if (isChecked) com.google.firebase.Timestamp.now() else null,
-                            )
-                            repository.setDocument(
-                                "tasks",
-                                task.id,
-                                CanonicalCodecs.encodeTaskUpdate(updated),
-                                merge = true,
-                            )
+
+                tasksContainer.removeAllViews()
+                if (tasks.isEmpty()) {
+                    val emptyView = TextView(this@MainActivity).apply {
+                        text = "No tasks yet"
+                        setTextColor(getColor(R.color.overseer_muted))
+                    }
+                    tasksContainer.addView(emptyView)
+                } else {
+                    tasks.take(3).forEach { task ->
+                        val checkbox = CheckBox(this@MainActivity).apply {
+                            text = task.title
+                            isChecked = task.completed
+                            setTextColor(getColor(R.color.overseer_navy))
+                            setOnCheckedChangeListener { _, isChecked ->
+                                val updated = task.copy(
+                                    completed = isChecked,
+                                    completedAt = if (isChecked) com.google.firebase.Timestamp.now() else null,
+                                )
+                                repository.setDocument(
+                                    "tasks",
+                                    task.id,
+                                    CanonicalCodecs.encodeTaskUpdate(updated),
+                                    merge = true,
+                                )
+                            }
                         }
+                        tasksContainer.addView(checkbox)
                     }
                 }
             },
@@ -172,7 +179,52 @@ class MainActivity : AppCompatActivity() {
                 progressPercentage.text = cause.localizedMessage ?: "Check your connection"
             },
         )
+    }
 
+    private fun addQuickTask() {
+        val input = EditText(this).apply {
+            hint = "Task title"
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Add Task")
+            .setView(input)
+            .setPositiveButton("Add") { _, _ ->
+                val title = input.text.toString().trim()
+                if (title.isNotBlank()) {
+                    val repository = AuthenticatedFirestoreRepository(FirebaseFirestore.getInstance())
+                    val now = com.google.firebase.Timestamp.now()
+                    val newTask = Task(
+                        id = "task-" + UUID.randomUUID().toString(),
+                        createdAt = now,
+                        updatedAt = now,
+                        title = title,
+                        description = "",
+                        dueAt = null,
+                        dueDate = null,
+                        timeZoneId = null,
+                        priority = Priority.MEDIUM,
+                        courseId = null,
+                        completed = false,
+                        completedAt = null,
+                        sortOrder = 0.0,
+                        deletionStatus = DeletionStatus.ACTIVE,
+                        deletionJobId = null,
+                        deletionStartedAt = null,
+                    )
+                    repository.setDocument(
+                        "tasks",
+                        newTask.id,
+                        CanonicalCodecs.encodeTaskCreate(newTask),
+                        merge = false,
+                    )
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun updateUpNext() {
+        // Refreshes workspace schedule state if active
     }
 
     override fun onDestroy() {
