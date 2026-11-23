@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "355242324854",
+    "project_id": "overseer-f970c",
+    "storage_bucket": "overseer-f970c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:355242324854:android:bfd5554a06ae6d8b9d4057",
+        "android_client_info": {
+          "package_name": "com.zelycx.overseer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "355242324854-lvqncjt76ceej8vue7j5cldgc7v935g9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zelycx.overseer",
+            "certificate_hash": "b6b76642188c10efa0b69267d8c3696350b16f0f"
+          }
+        },
+        {
+          "client_id": "355242324854-1qnbot6h6m10enl0muptp20cl1k9sr9n.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeVsGkPt_pIKSOu-5DzpM68nW3KBXu2eE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "355242324854-1qnbot6h6m10enl0muptp20cl1k9sr9n.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-test/
+coverage/
+*.tsbuildinfo
+src/database/generated/
+.env
+.env.*
+!.env.example

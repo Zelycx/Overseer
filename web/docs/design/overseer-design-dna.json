@@ -1,0 +1,474 @@
+{
+  "meta": {
+    "name": "Overseer Design DNA",
+    "description": "Measured and documented visual rules for the Overseer study workspace, based on the landing page and its existing appearance presets.",
+    "source_references": [
+      "docs/design/overseer-reference-light-1440.png",
+      "src/styles/tokens.css",
+      "src/styles/landing.css",
+      "src/styles/theme.css",
+      "src/styles/motion.css"
+    ],
+    "created_at": "2026-11-22"
+  },
+  "design_system": {
+    "color": {
+      "palette_type": "analogous",
+      "primary": {
+        "hex": "#1c2c31",
+        "role": "charcoal ink for primary text and structure"
+      },
+      "secondary": {
+        "hex": "#77856a",
+        "role": "muted olive for illustration depth and secondary emphasis"
+      },
+      "accent": {
+        "hex": "#b8ce69",
+        "role": "muted lime for selected, active, and primary action states"
+      },
+      "neutral": {
+        "scale": [
+          "#f4f4ed",
+          "#fbfaf6",
+          "#e2e1d7",
+          "#75817c",
+          "#52615e",
+          "#1c2c31"
+        ],
+        "usage": "Warm ivory page canvas, raised paper surfaces, quiet dividers, and charcoal text. Dark appearance keeps the same olive accent and shifts surfaces to blue charcoal."
+      },
+      "semantic": {
+        "success": "#467a5d",
+        "warning": "#956927",
+        "error": "#a84f42",
+        "info": "#3f6e83"
+      },
+      "surface": {
+        "background": "#f4f4ed (studio light); appearance presets provide paper, high contrast, midnight, and dark variants",
+        "card": "#fbfaf6 with a fine neutral border",
+        "elevated": "#fffefa with a soft, diffused shadow"
+      },
+      "contrast_strategy": "Charcoal text on warm ivory in light mode, high-contrast text on blue-charcoal surfaces in dark mode, and accent colors reserved for actions and state.",
+      "measurement": {
+        "k": 8,
+        "sampling": {
+          "method": "deterministic_stratified",
+          "max_pixels": 160000,
+          "sampled_pixels": 160000
+        }
+      },
+      "measured_palette": [
+        {
+          "hex": "#f4f4ed",
+          "coverage": 0.7988,
+          "role": "background"
+        },
+        {
+          "hex": "#e2e1d7",
+          "coverage": 0.0684,
+          "role": "surface and illustration shadow"
+        },
+        {
+          "hex": "#1c2c31",
+          "coverage": 0.0285,
+          "role": "text"
+        },
+        {
+          "hex": "#77856a",
+          "coverage": 0.0247,
+          "role": "olive illustration midtone"
+        },
+        {
+          "hex": "#bec2a8",
+          "coverage": 0.0244,
+          "role": "soft sclera shade"
+        },
+        {
+          "hex": "#929c7f",
+          "coverage": 0.0217,
+          "role": "olive illustration light"
+        },
+        {
+          "hex": "#5b6b5a",
+          "coverage": 0.0191,
+          "role": "olive illustration depth"
+        },
+        {
+          "hex": "#3c4b49",
+          "coverage": 0.0143,
+          "role": "illustration outline"
+        }
+      ]
+    },
+    "typography": {
+      "type_scale": {
+        "display": {
+          "size": "clamp(4rem, 15.3vw, 13.625rem)",
+          "weight": 380,
+          "line_height": 0.83,
+          "tracking": "-0.105em"
+        },
+        "heading_1": {
+          "size": "clamp(2rem, 4vw, 3rem)",
+          "weight": 600,
+          "line_height": 1.1,
+          "tracking": "-0.055em"
+        },
+        "heading_2": {
+          "size": "1.75rem",
+          "weight": 600,
+          "line_height": 1.2,
+          "tracking": "-0.04em"
+        },
+        "heading_3": {
+          "size": "1.125rem",
+          "weight": 600,
+          "line_height": 1.3,
+          "tracking": "-0.025em"
+        },
+        "body": {
+          "size": "1rem",
+          "weight": 400,
+          "line_height": 1.55,
+          "tracking": "0"
+        },
+        "body_small": {
+          "size": "0.875rem",
+          "weight": 400,
+          "line_height": 1.55,
+          "tracking": "0"
+        },
+        "caption": {
+          "size": "0.75rem",
+          "weight": 500,
+          "line_height": 1.4,
+          "tracking": "0.01em"
+        },
+        "overline": {
+          "size": "0.6875rem",
+          "weight": 600,
+          "line_height": 1.35,
+          "tracking": "0.11em"
+        }
+      },
+      "font_families": {
+        "heading": "Manrope Variable",
+        "body": "Manrope Variable",
+        "mono": "ui-monospace, SFMono-Regular, Consolas, monospace"
+      },
+      "font_style_notes": "A humanist geometric sans with compact headings, broad weight range, and tabular figures for timers and counts."
+    },
+    "spacing": {
+      "base_unit": "4px",
+      "scale": [
+        "4px",
+        "8px",
+        "12px",
+        "16px",
+        "20px",
+        "24px",
+        "32px",
+        "40px",
+        "48px"
+      ],
+      "content_density": "comfortable",
+      "section_rhythm": "Tight control groups inside cards; 24–32px between workspace sections; generous 64–88px breaks on the landing page."
+    },
+    "layout": {
+      "grid_system": "Responsive 12-column editorial landing grid and flexible workspace grids.",
+      "max_content_width": "1450px workspace; 1400px landing content; 1200px observatory illustration",
+      "columns": "12 desktop columns, two-column editorial hero, single-column mobile layouts where needed",
+      "gutter": "24px desktop; 16–20px compact screens",
+      "breakpoints": [
+        "1120px",
+        "1100px",
+        "1080px",
+        "900px",
+        "820px",
+        "800px",
+        "760px",
+        "680px",
+        "560px",
+        "420px",
+        "410px",
+        "390px",
+        "360px"
+      ],
+      "alignment_tendency": "mixed: centered editorial canvas with left aligned workspace content"
+    },
+    "shape": {
+      "border_radius": {
+        "small": "9px",
+        "medium": "14px",
+        "large": "20px",
+        "pill": "999px"
+      },
+      "border_usage": "Subtle 1px borders define cards, fields, navigation, and selected states.",
+      "divider_style": "Low contrast hairlines with generous whitespace."
+    },
+    "elevation": {
+      "shadow_style": "soft diffused",
+      "levels": {
+        "low": "0 1px 2px rgba(22,39,39,.03)",
+        "medium": "0 9px 26px rgba(22,39,39,.04)",
+        "high": "0 20px 70px rgba(15,25,31,.22)"
+      },
+      "depth_cues": "Raised paper surfaces, restrained shadows, overlapping illustration layers, and slightly stronger active borders."
+    },
+    "iconography": {
+      "style": "Fine outline symbols with a small set of filled state marks.",
+      "stroke_weight": "1.6px–2px",
+      "size_scale": [
+        "14px",
+        "16px",
+        "20px",
+        "24px"
+      ],
+      "preferred_set": "Lucide"
+    },
+    "motion": {
+      "easing": {
+        "standard": "cubic-bezier(.2,.7,.2,1)",
+        "enter": "cubic-bezier(.16,1,.3,1)",
+        "exit": "cubic-bezier(.4,0,1,1)"
+      },
+      "duration_scale": {
+        "micro": "140ms",
+        "normal": "200ms",
+        "macro": "320ms"
+      },
+      "entrance_pattern": "Short opacity and 4–7px translation for route sections; modest stagger for small lists.",
+      "exit_pattern": "Fast opacity and small reverse translation; dialogs exit without spring overshoot.",
+      "philosophy": "Quiet feedback for navigation and controls, deliberate eye choreography, and no ambient loops beyond the eye's occasional blink."
+    },
+    "components": {
+      "button_style": "Compact charcoal or muted-lime actions with clear hover, active, focus, and disabled states.",
+      "input_style": "Raised surface fields with a clear olive focus ring and quiet border transition.",
+      "card_style": "Warm paper surfaces, thin border, soft shadow, restrained hover lift on pointer devices.",
+      "navigation_pattern": "Persistent workspace sidebar, compact mobile drawer, and keyboard-first command palette.",
+      "modal_style": "Centered raised surface, dim backdrop, visible close/cancel path, short fade and scale transition.",
+      "list_style": "Open rows with small separators, compact metadata, and low-amplitude entrance feedback.",
+      "component_notes": "Appearance presets share component rules; theme and density are expressed through CSS variables."
+    }
+  },
+  "design_style": {
+    "aesthetic": {
+      "mood": [
+        "calm",
+        "curious",
+        "thoughtful",
+        "precise"
+      ],
+      "visual_metaphor": "A quiet observatory for planning and learning.",
+      "era_influence": "Contemporary editorial design with restrained instrument references.",
+      "genre": "Editorial productivity workspace",
+      "personality_traits": [
+        "approachable",
+        "observant",
+        "meticulous"
+      ],
+      "adjectives": [
+        "warm",
+        "minimal",
+        "organic",
+        "measured"
+      ]
+    },
+    "visual_language": {
+      "complexity": "moderate",
+      "ornamentation": "subtle accents",
+      "whitespace_usage": "spacious on the landing page, comfortable and compact in task flows",
+      "visual_weight_distribution": "large single landing focal point with quieter edge annotations; even card weight in the workspace",
+      "focal_strategy": "single hero element",
+      "contrast_level": "moderate, with stronger contrast reserved for essential text and state",
+      "texture_usage": "Fine grid and radial linework, low opacity"
+    },
+    "composition": {
+      "hierarchy_method": "scale contrast and spatial isolation",
+      "balance_type": "radial hero with asymmetric editorial header",
+      "flow_direction": "top to bottom, with numbered feature links orbiting the eye",
+      "grouping_strategy": "Cards and rows group related actions; labels stay close to their control.",
+      "negative_space_role": "Allows the eye and primary action to remain legible without adding marketing copy."
+    },
+    "imagery": {
+      "photo_treatment": "none",
+      "illustration_style": "Layered SVG observatory eye with olive radial details and soft reflections.",
+      "graphic_elements": [
+        "fine orbit ellipses",
+        "numbered workspace links",
+        "soft area glow"
+      ],
+      "pattern_usage": "Quiet square grid fade on the hero canvas.",
+      "image_shape": "organic almond aperture and radial circular iris"
+    },
+    "interaction_feel": {
+      "feedback_style": "Immediate state changes with restrained transform and color feedback.",
+      "hover_behavior": "Pointer-only card lift and short icon translation; touch screens get direct states.",
+      "transition_personality": "smooth glide",
+      "loading_style": "Simple status copy and existing progress indicators.",
+      "microinteraction_density": "low to moderate"
+    },
+    "brand_voice_in_ui": {
+      "tone": "clear, calm, encouraging",
+      "formality": "conversational",
+      "cta_style": "direct invitation",
+      "empty_state_approach": "Brief, useful next step without decorative copy.",
+      "error_tone": "Plain language with an actionable recovery hint."
+    }
+  },
+  "visual_effects": {
+    "overview": {
+      "effect_intensity": "subtle-accent",
+      "performance_tier": "medium",
+      "fallback_strategy": "static SVG eye, CSS surfaces, and no WebGL dependency",
+      "primary_technology": "SVG, CSS, GSAP, Motion"
+    },
+    "background_effects": {
+      "type": "subtle-grid",
+      "description": "Low contrast grid fades into the landing canvas; dark appearance may add a soft, pointer-following area light.",
+      "technology": "CSS gradients",
+      "params": {
+        "color_palette": [
+          "charcoal",
+          "warm ivory",
+          "muted lime"
+        ],
+        "speed": "pointer response only",
+        "density": "92px grid",
+        "opacity": "low",
+        "blend_mode": "normal"
+      }
+    },
+    "particle_systems": {
+      "enabled": false,
+      "type": "none",
+      "description": "No particles are used.",
+      "technology": "none",
+      "params": {
+        "count": 0,
+        "shape": "none",
+        "size_range": "none",
+        "movement_pattern": "none",
+        "color_behavior": "none",
+        "interaction": "none",
+        "spawn_area": "none"
+      }
+    },
+    "3d_elements": {
+      "enabled": false,
+      "type": "none",
+      "description": "A Three.js iris prototype was compared against the SVG. Its harsher spokes and higher contrast weakened the friendly observatory style, so production remains vector based.",
+      "technology": "Three.js prototype only",
+      "params": {
+        "renderer": "WebGL2 prototype; not shipped",
+        "lighting": "broad hemisphere and soft directional lights",
+        "camera": "orthographic prototype",
+        "materials": "rough muted olive physical material",
+        "geometry": "shallow radial iris disc prototype",
+        "post_processing": [],
+        "interaction_model": "small pointer parallax prototype"
+      }
+    },
+    "shader_effects": {
+      "enabled": false,
+      "type": "none",
+      "description": "No custom shaders ship in the app.",
+      "technology": "none",
+      "params": {
+        "uniforms": [],
+        "vertex_manipulation": "none",
+        "fragment_output": "none",
+        "noise_type": "none",
+        "distortion": "none"
+      }
+    },
+    "scroll_effects": {
+      "parallax": {
+        "enabled": true,
+        "layers": 2,
+        "depth_range": "under 4px on the iris detail and low opacity scene glow",
+        "speed_curve": "pointer smoothing with fixed-step interpolation"
+      },
+      "scroll_triggered_animations": {
+        "enabled": true,
+        "trigger_points": "feature section enters viewport",
+        "animation_type": "short fade and rise",
+        "scrub_behavior": "none"
+      },
+      "scroll_morphing": {
+        "enabled": false,
+        "description": "No scroll-driven morphing is used."
+      }
+    },
+    "text_effects": {
+      "type": "none",
+      "description": "Text remains stable and readable; headings do not animate per character.",
+      "technology": "none",
+      "params": {
+        "split_strategy": "none",
+        "animation_per_unit": "none",
+        "stagger": "none",
+        "effect_style": "none"
+      }
+    },
+    "cursor_effects": {
+      "enabled": true,
+      "type": "soft spotlight and gaze tracking",
+      "description": "A fine pointer moves the complete iris assembly and a soft ambient beam in dark appearance only.",
+      "params": {
+        "shape": "diffuse ellipse",
+        "size": "390px by 300px ambient field and soft extended beam",
+        "blend_mode": "normal",
+        "trail": "none",
+        "interaction_zone": "landing page"
+      }
+    },
+    "image_effects": {
+      "type": "none",
+      "description": "The hero illustration is native SVG rather than a raster image.",
+      "technology": "SVG",
+      "params": {
+        "filter_pipeline": "soft drop shadow and radial/linear gradients",
+        "hover_transform": "none",
+        "reveal_animation": "short scene entry",
+        "distortion_type": "none"
+      }
+    },
+    "glassmorphism_neumorphism": {
+      "enabled": false,
+      "style": "none",
+      "params": {
+        "blur_radius": "0px",
+        "transparency": "none",
+        "border_treatment": "none",
+        "shadow_type": "none",
+        "light_source_angle": "none"
+      }
+    },
+    "canvas_drawings": {
+      "enabled": false,
+      "type": "none",
+      "description": "No Canvas rendering ships.",
+      "technology": "none",
+      "params": {
+        "draw_method": "none",
+        "animation_loop": "none",
+        "color_scheme": "none",
+        "responsiveness": "none",
+        "interaction": "none"
+      }
+    },
+    "svg_animations": {
+      "enabled": true,
+      "type": "eyelid blink and iris gaze",
+      "description": "The aperture path closes and opens under moving eyelid contours; the iris assembly follows a fine pointer.",
+      "params": {
+        "animation_method": "GSAP timeline for blink; requestAnimationFrame for gaze tracking",
+        "path_morphing": "generated SVG aperture path scaled between open and closed shapes",
+        "stroke_animation": "upper and lower contour follow the aperture path",
+        "filter_effects": "soft shadow retained; no harsh glow"
+      }
+    },
+    "composite_notes": "Three.js was prototyped in isolation and was not shipped because the resulting depth cues made the eye more severe and introduced a WebGL/runtime cost. The existing SVG keeps the complete non-WebGL implementation, and reduced motion returns it to a static open eye."
+  }
+}
