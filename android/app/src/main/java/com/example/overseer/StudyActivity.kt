@@ -1,504 +1,139 @@
 package com.example.overseer
 
+import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
+import android.view.View
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import android.widget.EditText
-import android.widget.Toast
-import android.content.Intent
-import android.view.View
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.graphics.Typeface
-import android.graphics.Color
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.card.MaterialCardView
-import com.google.android.material.button.MaterialButton
-import org.json.JSONArray
+import java.time.Instant
+import java.util.UUID
 
 class StudyActivity : AppCompatActivity() {
-
     private lateinit var addedSubjectsContainer: LinearLayout
-
+    private lateinit var studyToolsContainer: LinearLayout
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_study)
-
-        addedSubjectsContainer =
-            findViewById(R.id.addedSubjectsContainer)
-
-        // Set up bottom navigation
-        val bottomNavigation =
-            findViewById<BottomNavigationView>(R.id.bottomNavigation)
-
-        bottomNavigation.selectedItemId = R.id.nav_study
-
-        bottomNavigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-
-                R.id.nav_home -> {
-                    val intent = Intent(this, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    }
-
-                    startActivity(intent)
-                    finish()
-                    true
-                }
-
-                R.id.nav_schedule -> {
-                    startActivity(Intent(this, ScheduleActivity::class.java))
-                    finish()
-                    true
-                }
-
-                R.id.nav_study -> true
-
-                R.id.nav_focus -> {
-                    startActivity(Intent(this, FocusActivity::class.java))
-                    finish()
-                    true
-                }
-
-                R.id.nav_profile -> {
-                    startActivity(Intent(this, ProfileActivity::class.java))
-                    finish()
-                    true
-                }
-
-                else -> false
+        WorkspaceRepository.load(this)
+        addedSubjectsContainer = findViewById(R.id.addedSubjectsContainer)
+        studyToolsContainer = findViewById(R.id.studyToolsContainer)
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.addSubjectButton).setOnClickListener { editCourse(null) }
+        val nav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        nav.selectedItemId = R.id.nav_study
+        nav.setOnItemSelectedListener { item ->
+            val target = when (item.itemId) {
+                R.id.nav_home -> MainActivity::class.java; R.id.nav_schedule -> ScheduleActivity::class.java
+                R.id.nav_focus -> FocusActivity::class.java; R.id.nav_profile -> ProfileActivity::class.java
+                else -> null
             }
+            if (target == null) true else { startActivity(Intent(this, target)); finish(); true }
         }
-
-
-// Load saved subjects
-        val sharedPreferences =
-            getSharedPreferences("overseer_subjects", MODE_PRIVATE)
-
-        val subjectArray = JSONArray(
-            sharedPreferences.getString("subjects", "[]") ?: "[]"
-        )
-
-// Add starter subjects only during the initial setup
-        val initialized = sharedPreferences.getBoolean(
-            "starter_subjects_initialized",
-            false
-        )
-
-        if (!initialized) {
-
-            // Only add starters if this is a fresh, empty subject list
-            if (subjectArray.length() == 0) {
-                subjectArray.put("Database Management")
-                subjectArray.put("Programming")
-            }
-
-            sharedPreferences.edit()
-                .putString("subjects", subjectArray.toString())
-                .putBoolean("starter_subjects_initialized", true)
-                .apply()
-        }
-
-// Display all saved subjects
-        displaySubjects(subjectArray)
-
-        // Add Subject button
-        val addSubjectButton =
-            findViewById<MaterialButton>(R.id.addSubjectButton)
-
-        addSubjectButton.setOnClickListener {
-
-            val subjectInput = EditText(this)
-            subjectInput.hint = "Enter subject name"
-
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Add Subject")
-                .setMessage("Enter the name of your new subject.")
-                .setView(subjectInput)
-                .setPositiveButton("Add") { _, _ ->
-
-                    val subjectName =
-                        subjectInput.text.toString().trim()
-
-                    if (subjectName.isEmpty()) {
-                        Toast.makeText(
-                            this,
-                            "Please enter a subject name.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-
-                        return@setPositiveButton
-                    }
-
-                    val currentSubjects = JSONArray(
-                        sharedPreferences.getString("subjects", "[]") ?: "[]"
-                    )
-
-                    if (containsSubject(currentSubjects, subjectName)) {
-                        Toast.makeText(
-                            this,
-                            "This subject already exists.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-
-                        return@setPositiveButton
-                    }
-
-                    currentSubjects.put(subjectName)
-
-                    sharedPreferences.edit()
-                        .putString("subjects", currentSubjects.toString())
-                        .apply()
-
-                    addSubjectCard(subjectName, addedSubjectsContainer)
-
-                    Toast.makeText(
-                        this,
-                        "Subject added: $subjectName",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-        }
-
-        // Edge-to-edge padding
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-
-            val systemBars =
-                insets.getInsets(WindowInsetsCompat.Type.systemBars())
-
-            v.setPadding(
-                systemBars.left,
-                systemBars.top,
-                systemBars.right,
-                0
-            )
-
-            bottomNavigation.setPadding(
-                0,
-                0,
-                0,
-                systemBars.bottom
-            )
-
-            insets
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()); v.setPadding(bars.left, bars.top, bars.right, 0); nav.setPadding(0, 0, 0, bars.bottom); insets
         }
+        renderStudyTools()
+        renderCourses()
     }
+    override fun onResume() { super.onResume(); if (::addedSubjectsContainer.isInitialized) renderCourses() }
 
-    // Check whether a subject already exists, ignoring letter case
-    private fun containsSubject(
-        subjectArray: JSONArray,
-        subjectName: String,
-        excludedSubject: String? = null
-    ): Boolean {
-
-        for (i in 0 until subjectArray.length()) {
-            val existingName = subjectArray.getString(i)
-
-            if (
-                existingName.equals(subjectName, ignoreCase = true) &&
-                !existingName.equals(excludedSubject, ignoreCase = true)
-            ) {
-                return true
-            }
-        }
-
-        return false
-    }
-
-    // Display all saved subjects
-    private fun displaySubjects(subjectArray: JSONArray) {
-
+    private fun renderCourses() {
         addedSubjectsContainer.removeAllViews()
-
-        for (i in 0 until subjectArray.length()) {
-            addSubjectCard(
-                subjectArray.getString(i),
-                addedSubjectsContainer
-            )
+        val data = WorkspaceRepository.load(this)
+        if (data.courses.isEmpty()) addedSubjectsContainer.addView(WorkspaceUi.text(this, "Add a course to organize lessons, notes, and study materials.", 14f, WorkspaceUi.MUTED))
+        data.courses.forEach { course ->
+            val lessons = data.lessons.filter { it.courseId == course.id }
+            val completed = lessons.count { it.completed }
+            val materials = data.materials.count { it.courseId == course.id }
+            val content = WorkspaceUi.column(this)
+            val top = WorkspaceUi.row(this)
+            val titleColumn = WorkspaceUi.column(this, 0)
+            titleColumn.addView(WorkspaceUi.text(this, course.name, 17f, WorkspaceUi.NAVY, true))
+            val subtitle = listOfNotNull(course.code.takeIf(String::isNotBlank), course.instructor.takeIf(String::isNotBlank)).joinToString(" · ")
+            if (subtitle.isNotBlank()) titleColumn.addView(WorkspaceUi.text(this, subtitle, 12f, WorkspaceUi.MUTED).apply { setPadding(0, 4, 0, 0) })
+            top.addView(titleColumn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            top.addView(WorkspaceUi.subtleButton(this, "Open course", R.drawable.ic_chevron_right) { openCourse(course.id) })
+            content.addView(top)
+            if (course.description.isNotBlank()) content.addView(WorkspaceUi.text(this, course.description, 13f, WorkspaceUi.MUTED).apply { setPadding(0, 8, 0, 0) })
+            content.addView(WorkspaceUi.text(this, "$completed/${lessons.size} lessons complete · $materials materials", 12f, WorkspaceUi.MUTED).apply { setPadding(0, 8, 0, 0) })
+            val card = WorkspaceUi.card(this, content).apply { isClickable = true; isFocusable = true; setOnClickListener { openCourse(course.id) } }
+            card.setOnLongClickListener { showCourseOptions(course); true }
+            addedSubjectsContainer.addView(card)
         }
     }
 
-    // Create a subject card
-    private fun addSubjectCard(
-        subjectName: String,
-        container: LinearLayout
-    ) {
-
-        val card = MaterialCardView(this).apply {
-
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin =
-                    (12 * resources.displayMetrics.density).toInt()
+    private fun renderStudyTools() {
+        val tools = listOf(
+            "Tasks" to R.drawable.ic_tasks,
+            "Day planner" to R.drawable.ic_day_planner,
+            "Focus" to R.drawable.ic_focus,
+            "Progress" to R.drawable.ic_progress,
+            "Study materials" to R.drawable.ic_book_open,
+            "Study assistant" to R.drawable.ic_help,
+        )
+        val destinations = listOf(
+            TasksActivity::class.java, PlannerActivity::class.java, FocusActivity::class.java,
+            ProgressActivity::class.java, LessonDetailActivity::class.java, AssistantActivity::class.java,
+        )
+        studyToolsContainer.removeAllViews()
+        tools.chunked(2).forEachIndexed { rowIndex, rowTools ->
+            val row = WorkspaceUi.row(this).apply { gravity = android.view.Gravity.TOP }
+            rowTools.forEachIndexed { columnIndex, (label, icon) ->
+                val index = rowIndex * 2 + columnIndex
+                val card = WorkspaceUi.toolCard(this, label, icon) {
+                    startActivity(Intent(this, destinations[index]))
+                }
+                val params = LinearLayout.LayoutParams(0, WorkspaceUi.dp(this, 78), 1f).apply {
+                    if (columnIndex == 0) marginEnd = WorkspaceUi.dp(this@StudyActivity, 8)
+                    if (columnIndex == 1) marginStart = WorkspaceUi.dp(this@StudyActivity, 8)
+                    bottomMargin = WorkspaceUi.dp(this@StudyActivity, 2)
+                }
+                row.addView(card, params)
             }
-
-            radius = 16f * resources.displayMetrics.density
-            cardElevation = 2f * resources.displayMetrics.density
-
-            setCardBackgroundColor(getColor(R.color.overseer_white))
-
-            strokeWidth =
-                (1 * resources.displayMetrics.density).toInt()
-
-            strokeColor = Color.parseColor("#E5E5E5")
+            studyToolsContainer.addView(row)
         }
-
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-
-            setPadding(
-                (18 * resources.displayMetrics.density).toInt(),
-                (18 * resources.displayMetrics.density).toInt(),
-                (18 * resources.displayMetrics.density).toInt(),
-                (18 * resources.displayMetrics.density).toInt()
-            )
-        }
-
-        val title = TextView(this).apply {
-            text = subjectName
-            textSize = 18f
-            setTextColor(getColor(R.color.overseer_navy))
-            setTypeface(null, Typeface.BOLD)
-        }
-
-        val subtitle = TextView(this).apply {
-            text = "Notes, files and reviewers"
-            textSize = 13f
-            setTextColor(Color.GRAY)
-
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin =
-                    (6 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        content.addView(title)
-        content.addView(subtitle)
-        card.addView(content)
-
-        // Long press to edit or delete
-        card.setOnLongClickListener {
-            showSubjectOptions(subjectName)
-            true
-        }
-
-        // Normal click to open subject details
-        card.setOnClickListener {
-            val intent = Intent(this, SubjectDetailActivity::class.java)
-            intent.putExtra("subject_name", subjectName)
-            startActivity(intent)
-        }
-
-        container.addView(card)
     }
 
-    // Show subject options
-    private fun showSubjectOptions(subjectName: String) {
+    private fun openCourse(id: String) { startActivity(Intent(this, SubjectDetailActivity::class.java).putExtra("course_id", id)) }
 
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(subjectName)
-            .setItems(arrayOf("Edit Subject", "Delete Subject")) { _, which ->
-
-                when (which) {
-                    0 -> showEditSubjectDialog(subjectName)
-                    1 -> deleteSubject(subjectName)
-                }
-            }
-            .show()
+    private fun editCourse(existing: WorkspaceCourse?) {
+        val form = WorkspaceUi.column(this, 4)
+        fun field(hint: String, value: String, multi: Boolean = false) = WorkspaceUi.editText(this).apply { this.hint = hint; setText(value); if (multi) { minLines = 2; maxLines = 4; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE }; form.addView(this) }
+        val name = field("Course name", existing?.name.orEmpty()); val code = field("Course code", existing?.code.orEmpty()); val instructor = field("Instructor", existing?.instructor.orEmpty()); val description = field("Description", existing?.description.orEmpty(), true)
+        val dialog = AlertDialog.Builder(this).setTitle(if (existing == null) "Add course" else "Edit course").setView(form).setNegativeButton("Cancel", null).setPositiveButton("Save", null).create()
+        dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val clean = name.text.toString().trim()
+            if (clean.isBlank()) { name.error = "Add a course name"; return@setOnClickListener }
+            val stamp = Instant.now().toString(); val course = (existing ?: WorkspaceCourse(UUID.randomUUID().toString(), "", createdAt = stamp)).copy(name = clean, code = code.text.toString().trim(), instructor = instructor.text.toString().trim(), description = description.text.toString().trim())
+            WorkspaceRepository.update(this) { data -> if (existing == null) data.copy(courses = data.courses + course) else data.copy(courses = data.courses.map { if (it.id == course.id) course else it }) }
+            dialog.dismiss(); renderCourses()
+        } }; dialog.show()
     }
 
-    // Edit subject
-    private fun showEditSubjectDialog(oldSubjectName: String) {
-
-        val subjectInput = EditText(this)
-        subjectInput.setText(oldSubjectName)
-        subjectInput.selectAll()
-        subjectInput.hint = "Enter subject name"
-
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Edit Subject")
-            .setMessage("Change the name of your subject.")
-            .setView(subjectInput)
-            .setPositiveButton("Save") { _, _ ->
-
-                val newSubjectName =
-                    subjectInput.text.toString().trim()
-
-                if (newSubjectName.isEmpty()) {
-                    Toast.makeText(
-                        this,
-                        "Subject name cannot be empty.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    return@setPositiveButton
-                }
-
-                if (newSubjectName == oldSubjectName) {
-                    return@setPositiveButton
-                }
-
-                val subjectPreferences =
-                    getSharedPreferences("overseer_subjects", MODE_PRIVATE)
-
-                val subjectArray = JSONArray(
-                    subjectPreferences.getString("subjects", "[]") ?: "[]"
-                )
-
-                if (
-                    containsSubject(
-                        subjectArray,
-                        newSubjectName,
-                        oldSubjectName
-                    )
-                ) {
-                    Toast.makeText(
-                        this,
-                        "A subject with that name already exists.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    return@setPositiveButton
-                }
-
-                // Rename the subject in the saved subject list
-                for (i in 0 until subjectArray.length()) {
-                    if (subjectArray.getString(i) == oldSubjectName) {
-                        subjectArray.put(i, newSubjectName)
-                        break
-                    }
-                }
-
-                subjectPreferences.edit()
-                    .putString("subjects", subjectArray.toString())
-                    .apply()
-
-                // Move the subject's materials to its new name
-                moveSubjectMaterials(oldSubjectName, newSubjectName)
-
-                Toast.makeText(
-                    this,
-                    "Subject renamed to: $newSubjectName",
-                    Toast.LENGTH_SHORT
-                ).show()
-
-                recreate()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    // Move materials when a subject is renamed
-    private fun moveSubjectMaterials(
-        oldSubjectName: String,
-        newSubjectName: String
-    ) {
-
-        val materialsPreferences =
-            getSharedPreferences("overseer_materials", MODE_PRIVATE)
-
-        val oldKey = "materials_$oldSubjectName"
-        val newKey = "materials_$newSubjectName"
-
-        val oldMaterials =
-            materialsPreferences.getString(oldKey, null)
-
-        if (oldMaterials == null) {
-            return
-        }
-
-        val newMaterials =
-            materialsPreferences.getString(newKey, null)
-
-        val combinedMaterials = JSONArray()
-        val seenMaterials = mutableSetOf<String>()
-
-        // Preserve any materials already stored under the new key
-        if (newMaterials != null) {
-            val newArray = JSONArray(newMaterials)
-
-            for (i in 0 until newArray.length()) {
-                val material = newArray.getString(i)
-
-                if (seenMaterials.add(material.lowercase())) {
-                    combinedMaterials.put(material)
-                }
-            }
-        }
-
-        // Add the old subject's materials without duplicates
-        val oldArray = JSONArray(oldMaterials)
-
-        for (i in 0 until oldArray.length()) {
-            val material = oldArray.getString(i)
-
-            if (seenMaterials.add(material.lowercase())) {
-                combinedMaterials.put(material)
-            }
-        }
-
-        materialsPreferences.edit()
-            .putString(newKey, combinedMaterials.toString())
-            .remove(oldKey)
-            .apply()
-    }
-
-    // Delete subject
-    private fun deleteSubject(subjectName: String) {
-
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Delete Subject")
-            .setMessage(
-                "Are you sure you want to delete \"$subjectName\"? Its saved materials will also be deleted."
-            )
-            .setPositiveButton("Delete") { _, _ ->
-
-                val subjectPreferences =
-                    getSharedPreferences("overseer_subjects", MODE_PRIVATE)
-
-                val subjectArray = JSONArray(
-                    subjectPreferences.getString("subjects", "[]") ?: "[]"
-                )
-
-                for (i in 0 until subjectArray.length()) {
-                    if (subjectArray.getString(i) == subjectName) {
-                        subjectArray.remove(i)
-                        break
-                    }
-                }
-
-                subjectPreferences.edit()
-                    .putString("subjects", subjectArray.toString())
-                    .apply()
-
-                // Delete materials belonging to this subject
-                val materialsPreferences =
-                    getSharedPreferences("overseer_materials", MODE_PRIVATE)
-
-                materialsPreferences.edit()
-                    .remove("materials_$subjectName")
-                    .apply()
-
-                Toast.makeText(
-                    this,
-                    "Subject deleted: $subjectName",
-                    Toast.LENGTH_SHORT
-                ).show()
-
-                recreate()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+    private fun showCourseOptions(course: WorkspaceCourse) {
+        AlertDialog.Builder(this).setTitle(course.name).setItems(arrayOf("Edit course", "Delete course")) { _, which ->
+            if (which == 0) editCourse(course) else AlertDialog.Builder(this).setTitle("Delete course?").setMessage("This removes the course and its lessons and materials. Tasks, events, and study sessions will remain with no course link.").setNegativeButton("Cancel", null).setPositiveButton("Delete") { _, _ ->
+                WorkspaceRepository.update(this) { d -> d.copy(
+                    courses = d.courses.filterNot { it.id == course.id },
+                    lessons = d.lessons.filterNot { it.courseId == course.id },
+                    materials = d.materials.filterNot { it.courseId == course.id },
+                    tasks = d.tasks.map { if (it.courseId == course.id) it.copy(courseId = null) else it },
+                    events = d.events.map { if (it.courseId == course.id) it.copy(courseId = null) else it },
+                    plannerBlocks = d.plannerBlocks.map { if (it.courseId == course.id) it.copy(courseId = null) else it },
+                    focusSessions = d.focusSessions.map { if (it.courseId == course.id) it.copy(courseId = null) else it },
+                    focusTimer = if (d.focusTimer.courseId == course.id) d.focusTimer.copy(courseId = null) else d.focusTimer,
+                ) }
+                Toast.makeText(this, "Course deleted", Toast.LENGTH_SHORT).show(); renderCourses()
+            }.show()
+        }.show()
     }
 }

@@ -1,4 +1,4 @@
-.button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid transparent; border-radius: 11px; font-weight: 650; line-height: 1; white-space: nowrap; cursor: pointer; transition: background .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid transparent; border-radius: 11px; font-weight: 650; line-height: 1; white-space: nowrap; cursor: pointer; transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard); }
 .button:hover { transform: translateY(-1px); }
 .button--small { min-height: 36px; padding: 0 13px; font-size: 12px; border-radius: 9px; }
 .button--medium { min-height: 42px; padding: 0 16px; font-size: 13px; }

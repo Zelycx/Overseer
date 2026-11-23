@@ -16,6 +16,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import java.util.UUID
+import java.time.Instant
+import java.util.UUID
+import java.nio.charset.StandardCharsets
 
 class FocusActivity : AppCompatActivity() {
     private var listener: ListenerRegistration? = null
@@ -27,6 +30,7 @@ class FocusActivity : AppCompatActivity() {
         val auth = FirebaseAuth.getInstance()
         if (auth.currentUser == null) { openAuth(); return }
         setContentView(R.layout.activity_focus)
+        WorkspaceRepository.load(this)
 
         val display = findViewById<TextView>(R.id.focusTime)
         val status = findViewById<TextView>(R.id.focusStatus)

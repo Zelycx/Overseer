@@ -3,12 +3,27 @@ export type EventType = 'class' | 'study' | 'personal' | 'other'
 export type EventColor = 'navy' | 'lime' | 'blue' | 'amber'
 export type FocusMode = 'focus' | 'shortBreak' | 'longBreak'
 export type TimerStatus = 'idle' | 'running' | 'paused'
+export type Theme = 'light' | 'dark'
+export type AppearancePreset = 'studio' | 'midnight' | 'paper' | 'high-contrast'
+export type AppearanceMode = 'system' | 'light' | 'dark'
+export type AccentColor = 'olive' | 'blue' | 'terracotta' | 'violet' | 'teal'
+export type LayoutDensity = 'comfortable' | 'compact'
 
 export interface UserPreferences {
   displayName: string
+  /** Android keeps this optional profile detail; Web preserves it during round trips. */
+  profileEmail?: string
   timeFormat: '12h' | '24h'
   firstDayOfWeek: 0 | 1
   timeZoneId: string
+  /** Retained for compatibility with local records written before the appearance system. */
+  theme: Theme
+  appearancePreset: AppearancePreset
+  appearanceMode: AppearanceMode
+  accentColor: AccentColor
+  density: LayoutDensity
+  reducedMotion: boolean
+  sidebarCollapsed: boolean
 }
 
 export interface Course {
@@ -59,6 +74,8 @@ export interface ScheduleEvent {
   title: string
   description: string
   date: string
+  /** The event repeats on this weekday from `date` onward when true. */
+  repeatWeekly: boolean
   startTime: string
   endTime: string
   type: EventType

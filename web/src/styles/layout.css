@@ -1,12 +1,7 @@
 .app-shell { min-height: 100vh; background: #f8f7fa; }
 .sidebar { position: fixed; z-index: 30; inset: 0 auto 0 0; display: flex; flex-direction: column; width: 246px; padding: 22px 14px 14px; color: #fff; background: var(--navy); }
-.brand { display: inline-flex; align-items: center; gap: 9px; width: fit-content; color: var(--navy); }
-.brand__mark { position: relative; display: inline-grid; place-items: center; width: 29px; height: 29px; border-radius: 9px; background: var(--lime); transform: rotate(-7deg); }
-.brand__mark::before, .brand__mark::after, .brand__mark span { position: absolute; display: block; width: 12px; height: 2px; border-radius: 4px; background: var(--navy); content: ""; }
-.brand__mark::before { transform: translateY(-4px) rotate(38deg); }
-.brand__mark::after { transform: translateY(4px) rotate(-38deg); }
-.brand__mark span { width: 2px; height: 13px; transform: rotate(8deg); }
-.brand__word { font-size: 20px; font-weight: 760; letter-spacing: -.07em; }
+.brand { display: inline-flex; align-items: center; gap: 0; width: fit-content; color: var(--navy); }
+.brand__word { font-family: var(--font-display); font-size: 22px; font-weight: 620; letter-spacing: -.075em; }
 .sidebar .brand { color: white; padding-left: 6px; margin-bottom: 27px; }
 .workspace-switcher { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 7px 9px; margin-bottom: 27px; border: 1px solid rgb(255 255 255 / 11%); border-radius: 12px; background: rgb(255 255 255 / 5%); }
 .workspace-switcher__avatar { display: grid; place-items: center; width: 32px; height: 32px; color: var(--navy); border-radius: 9px; background: #e9eaf5; }

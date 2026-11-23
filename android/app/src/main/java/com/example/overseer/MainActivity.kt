@@ -1,17 +1,29 @@
 package com.example.overseer
 
+import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.CheckBox
-import android.widget.ProgressBar
+import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import kotlin.math.roundToInt
-import android.content.Intent
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.button.MaterialButton
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.UUID
+import kotlin.math.roundToInt
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -44,34 +56,36 @@ class MainActivity : AppCompatActivity() {
             return
         }
         auth.addAuthStateListener(observedAuthListener)
-
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-
-        // Set greeting based on current time
-        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-
-        val greeting = findViewById<TextView>(R.id.greeting)
-        val dateText = findViewById<TextView>(R.id.dateText)
-
-        greeting.text = when (currentHour) {
+        WorkspaceRepository.load(this) // migrate the legacy local stores once, before any screen reads data.
+        if (WorkspaceRepository.shouldShowRecoveryNotice(this)) {
+            WorkspaceRepository.markRecoveryNoticeShown(this)
+            AlertDialog.Builder(this)
+                .setTitle("A saved workspace file could not be read")
+                .setMessage("A recovery copy was preserved in this app. Your workspace has opened without that file so you can continue. Open Profile → Export recovery copy to save the preserved file before importing or resetting data.")
+                .setPositiveButton("Open profile") { _, _ -> startActivity(Intent(this, ProfileActivity::class.java)) }
+                .setNegativeButton("Continue", null)
+                .show()
+        }
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        findViewById<TextView>(R.id.greeting).text = when (hour) {
             in 5..11 -> "Good morning!"
             in 12..16 -> "Good afternoon!"
             in 17..20 -> "Good evening!"
             else -> "Good night!"
         }
+        findViewById<TextView>(R.id.dateText).text = java.text.SimpleDateFormat("EEEE, MMMM d", java.util.Locale.getDefault()).format(java.util.Date())
 
-// Set today's date
-        val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.US)
-        dateText.text = dateFormat.format(Calendar.getInstance().time)
+        findViewById<MaterialButton>(R.id.addTaskButton).setOnClickListener { addQuickTask() }
+        findViewById<MaterialButton>(R.id.openTasksButton).setOnClickListener { startActivity(Intent(this, TasksActivity::class.java)) }
+        findViewById<MaterialButton>(R.id.openDayPlannerButton).setOnClickListener { startActivity(Intent(this, PlannerActivity::class.java)) }
+        findViewById<MaterialButton>(R.id.openProgressButton).setOnClickListener { startActivity(Intent(this, ProgressActivity::class.java)) }
+        findViewById<View>(R.id.upNextCard).setOnClickListener { startActivity(Intent(this, ScheduleActivity::class.java)) }
 
-        // Set up bottom navigation
-        val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-
-
-        bottomNavigation.selectedItemId = R.id.nav_home
-
-        bottomNavigation.setOnItemSelectedListener { item ->
+        val nav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        nav.selectedItemId = R.id.nav_home
+        nav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
 
@@ -98,21 +112,10 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
-
-        // Handle phone screen insets
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-
-            v.setPadding(
-                systemBars.left,
-                systemBars.top,
-                systemBars.right,
-                0
-            )
-
-            findViewById<View>(R.id.bottomNavigation)
-                .setPadding(0, 0, 0, systemBars.bottom)
-
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(bars.left, bars.top, bars.right, 0)
+            nav.setPadding(0, 0, 0, bars.bottom)
             insets
         }
 
@@ -191,5 +194,4 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         updateUpNext()
     }
-
 }
