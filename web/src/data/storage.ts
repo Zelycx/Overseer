@@ -4,6 +4,12 @@ import { localDateKey } from './dates'
 export const STORAGE_KEY = 'overseer.local-data'
 export const STORAGE_VERSION = 2
 
+export function getAppDataStorageKey(userId: string | null): string {
+  if (userId === null) return STORAGE_KEY
+  if (userId.length === 0) throw new Error('A Firebase user ID cannot be empty.')
+  return `${STORAGE_KEY}.user.${encodeURIComponent(userId)}`
+}
+
 function validDateKey(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const [year, month, day] = value.split('-').map(Number)
@@ -97,27 +103,48 @@ function migrateAppData(value: AppData): AppData {
   }
 }
 
-export function loadAppData(): AppData {
+export function loadAppData(userId: string | null = null): AppData {
+  const storageKey = getAppDataStorageKey(userId)
   let raw: string | null
   try {
-    raw = localStorage.getItem(STORAGE_KEY)
+    raw = localStorage.getItem(storageKey)
   } catch {
     return createEmptyData()
   }
-  if (raw === null) return createSeedData()
+  if (raw === null) return createEmptyData()
   try {
     const parsed = JSON.parse(raw) as Partial<PersistedAppData>
     if ((parsed.version === STORAGE_VERSION || parsed.version === 1) && validateAppData(parsed.data)) return migrateAppData(parsed.data)
   } catch {
     // Preserve an unusable record below before starting a clean workspace.
   }
-  try { localStorage.setItem(`${STORAGE_KEY}.recovery`, raw) } catch { /* Storage may be unavailable or full. */ }
+  try { localStorage.setItem(`${storageKey}.recovery`, raw) } catch { /* Storage may be unavailable or full. */ }
   return createEmptyData()
 }
 
-export function saveAppData(data: AppData): void {
+export function saveAppData(data: AppData, userId: string | null = null): void {
   const record: PersistedAppData = { version: STORAGE_VERSION, data }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(record))
+  localStorage.setItem(getAppDataStorageKey(userId), JSON.stringify(record))
+}
+
+export function loadLegacyAppData(): AppData | null {
+  let raw: string | null
+  try {
+    raw = localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return null
+  }
+  if (raw === null) return null
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<PersistedAppData>
+    if ((parsed.version === STORAGE_VERSION || parsed.version === 1) && validateAppData(parsed.data)) {
+      return migrateAppData(parsed.data)
+    }
+  } catch {
+    return null
+  }
+  return null
 }
 
 export function parseImportData(text: string): AppData {

@@ -16,6 +16,7 @@
     "test:config": "node tests/firebase-config.test.mjs",
     "test:codecs": "node tests/firestore-codecs.test.mjs",
     "test:timezone": "node tests/timezone-resolution.test.mjs",
+    "test:app-data": "node tests/app-data-storage.test.mjs",
     "test:auth": "cd .. && firebase emulators:exec --only auth --project demo-overseer-web \"node --test web/tests/auth.test.mjs\""
   },
   "dependencies": {

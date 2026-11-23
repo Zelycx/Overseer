@@ -57,7 +57,7 @@ When Firebase configuration is absent or invalid, Firebase Auth is unavailable a
 
 ## Firestore rules
 
-`firestore.rules` is deny-all. No ownership model or application data permissions are defined in Phase 1A, so the emulator tests verify that both authenticated and unauthenticated reads and writes are denied. These rules are local and are not deployed.
+`firestore.rules` enforces owner-scoped access with collection-specific permissions for user profiles, application data, settings, timers, and assistant conversations and messages. Course and Task access is subject to their lifecycle and reference checks. Deletion and migration job collections are server-only; clients are denied access. These Rules define client authorization policy only and do not establish that trusted backend workflows have been implemented or audited. The Rules are local and are not deployed.
 
 Run the Rules tests with:
 
@@ -71,10 +71,10 @@ npm --prefix web run test:rules
 
 ## Current scope
 
-When valid Firebase configuration is supplied, Firebase App, Auth, and Firestore are initialized by `src/firebase/client.ts`. This phase adds Web Auth session management and protected workspace routing only. Firestore Rules remain deny-all; there is no Firestore CRUD, profile/preferences bootstrap, local-data migration or synchronization, AI Logic, App Check activation, Rules deployment, or Firebase Console change. `overseer.local-data` remains device-local and its import/export, recovery, seed, and reset behavior is unchanged.
+When valid Firebase configuration is supplied, Firebase App, Auth, and Firestore are initialized by `src/firebase/client.ts`. This phase adds Web Auth session management and protected workspace routing only. The Web app does not yet expose Firestore CRUD, profile/preferences bootstrap, local-data migration or synchronization, AI Logic, or App Check activation; no Rules deployment or Firebase Console change is included. `overseer.local-data` remains device-local and its import/export, recovery, seed, and reset behavior is unchanged.
 
 Run the focused Firebase configuration tests with:
 
 ```sh
-npm run test:config
+npm --prefix web run test:config
 ```

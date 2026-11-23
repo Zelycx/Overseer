@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
 import type { AppData, FocusSession, FocusTimer } from '../types/app'
 import { createEmptyData, createId, loadAppData, saveAppData } from '../data/storage'
+import { useAuth } from './AuthContext'
 
 type Action =
   | { type: 'patch'; patch: Partial<AppData> }
@@ -37,15 +38,22 @@ interface AppDataContextValue {
 const AppDataContext = createContext<AppDataContextValue | null>(null)
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const [data, dispatch] = useReducer(reducer, undefined, loadAppData)
+  const { user } = useAuth()
+  const userId = user?.uid ?? null
+
+  return <UserAppDataProvider key={userId ?? 'anonymous'} userId={userId}>{children}</UserAppDataProvider>
+}
+
+function UserAppDataProvider({ children, userId }: { children: ReactNode; userId: string | null }) {
+  const [data, dispatch] = useReducer(reducer, userId, loadAppData)
   const [storageError, setStorageError] = useState<string | null>(null)
   const update = useCallback((patch: Partial<AppData>) => dispatch({ type: 'patch', patch }), [])
   const importData = useCallback((imported: AppData) => dispatch({ type: 'import', data: imported }), [])
   const resetData = useCallback(() => dispatch({ type: 'reset' }), [])
 
   useEffect(() => {
-    try { saveAppData(data); setStorageError(null) } catch (error) { console.error('Unable to save local Overseer data', error); setStorageError('Overseer could not save changes in this browser. Export a backup and free local storage space, then try again.') }
-  }, [data])
+    try { saveAppData(data, userId); setStorageError(null) } catch (error) { console.error('Unable to save local Overseer data', error); setStorageError('Overseer could not save changes in this browser. Export a backup and free local storage space, then try again.') }
+  }, [data, userId])
 
   useEffect(() => {
     if (data.focusTimer.status === 'running' && data.focusTimer.endsAt !== null && data.focusTimer.endsAt <= Date.now()) {
