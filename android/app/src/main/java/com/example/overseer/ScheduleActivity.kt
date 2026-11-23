@@ -26,6 +26,24 @@ class ScheduleActivity : AppCompatActivity() {
     private var eventListener: ListenerRegistration? = null
     private var events = emptyList<ScheduleEvent>()
 
+    private lateinit var scheduleDate: TextView
+    private lateinit var selectedDayDescription: TextView
+    private lateinit var noClassesMessage: TextView
+    private lateinit var classesContainer: LinearLayout
+
+    private val calendar = Calendar.getInstance()
+
+    private val preferences by lazy {
+        getSharedPreferences("overseer_schedule", MODE_PRIVATE)
+    }
+
+    private val scheduleKey = "classes"
+
+    private val days = listOf(
+        "Sunday", "Monday", "Tuesday", "Wednesday",
+        "Thursday", "Friday", "Saturday"
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {

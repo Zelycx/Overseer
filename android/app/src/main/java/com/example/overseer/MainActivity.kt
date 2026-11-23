@@ -1,4 +1,3 @@
-
 package com.example.overseer
 
 import android.os.Bundle
@@ -49,8 +48,26 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
+        // Set greeting based on current time
+        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+
+        val greeting = findViewById<TextView>(R.id.greeting)
+        val dateText = findViewById<TextView>(R.id.dateText)
+
+        greeting.text = when (currentHour) {
+            in 5..11 -> "Good morning!"
+            in 12..16 -> "Good afternoon!"
+            in 17..20 -> "Good evening!"
+            else -> "Good night!"
+        }
+
+// Set today's date
+        val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.US)
+        dateText.text = dateFormat.format(Calendar.getInstance().time)
+
         // Set up bottom navigation
         val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+
 
         bottomNavigation.selectedItemId = R.id.nav_home
 
@@ -105,10 +122,9 @@ class MainActivity : AppCompatActivity() {
         val progressPercentage = findViewById<TextView>(R.id.progressPercentage)
 
 
-        // Get the task checkboxes
-        val taskOne = findViewById<CheckBox>(R.id.taskOne)
-        val taskTwo = findViewById<CheckBox>(R.id.taskTwo)
-        val taskThree = findViewById<CheckBox>(R.id.taskThree)
+
+        // Get the task container
+        val tasksContainer = findViewById<LinearLayout>(R.id.tasksContainer)
 
         val taskCheckboxes = listOf(taskOne, taskTwo, taskThree)
         val repository = AuthenticatedFirestoreRepository(FirebaseFirestore.getInstance())
@@ -170,4 +186,10 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
         finish()
     }
+
+    override fun onResume() {
+        super.onResume()
+        updateUpNext()
+    }
+
 }
