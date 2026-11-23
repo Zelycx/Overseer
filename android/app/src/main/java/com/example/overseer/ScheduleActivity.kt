@@ -152,28 +152,6 @@ class ScheduleActivity : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()
-        WorkspaceRepository.load(this)
-        scheduleDate = findViewById(R.id.scheduleDate)
-        selectedDayDescription = findViewById(R.id.selectedDayDescription)
-        noClassesMessage = findViewById(R.id.noClassesMessage)
-        classesContainer = findViewById(R.id.classesContainer)
-        findViewById<android.widget.ImageButton>(R.id.previousDayButton).setOnClickListener { calendar.add(Calendar.DAY_OF_MONTH, -1); updateSchedule() }
-        findViewById<android.widget.ImageButton>(R.id.nextDayButton).setOnClickListener { calendar.add(Calendar.DAY_OF_MONTH, 1); updateSchedule() }
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.addClassButton).setOnClickListener { showEventDialog(null) }
-        val nav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-        nav.selectedItemId = R.id.nav_schedule
-        nav.setOnItemSelectedListener { item ->
-            val target = when (item.itemId) {
-                R.id.nav_home -> MainActivity::class.java; R.id.nav_study -> StudyActivity::class.java
-                R.id.nav_focus -> FocusActivity::class.java; R.id.nav_profile -> ProfileActivity::class.java
-                else -> null
-            }
-            if (target == null) true else { startActivity(Intent(this, target)); finish(); true }
-        }
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.scheduleMain)) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()); v.setPadding(bars.left, bars.top, bars.right, 0); nav.setPadding(0, 0, 0, bars.bottom); insets
-        }
-        updateSchedule()
     }
 
     override fun onResume() { super.onResume(); if (::classesContainer.isInitialized) updateSchedule() }

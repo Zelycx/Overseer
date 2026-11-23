@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:355242324854:android:bfd5554a06ae6d8b9d4057",
         "android_client_info": {
-          "package_name": "com.zelycx.overseer"
+          "package_name": "com.example.overseer"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "355242324854-lvqncjt76ceej8vue7j5cldgc7v935g9.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.zelycx.overseer",
+            "package_name": "com.example.overseer",
             "certificate_hash": "b6b76642188c10efa0b69267d8c3696350b16f0f"
           }
         },
