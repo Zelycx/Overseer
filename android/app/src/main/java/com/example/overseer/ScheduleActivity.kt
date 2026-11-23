@@ -1,104 +1,140 @@
-
 package com.example.overseer
 
-import android.os.Bundle
 import android.content.Intent
-import android.widget.TextView
-import android.widget.Button
-import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.Calendar
+import android.os.Bundle
 import android.view.View
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import com.example.overseer.data.firestore.AuthenticatedFirestoreRepository
+import com.example.overseer.data.firestore.CanonicalCodecs
+import com.example.overseer.data.firestore.ScheduleEvent
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Locale
 
 class ScheduleActivity : AppCompatActivity() {
+    private var eventListener: ListenerRegistration? = null
+    private var events = emptyList<ScheduleEvent>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        try {
+            FirebaseApp.initializeApp(this)
+        } catch (_: Exception) {
+            openAuth()
+            return
+        }
+        val auth = FirebaseAuth.getInstance()
+        if (auth.currentUser == null) {
+            openAuth()
+            return
+        }
         setContentView(R.layout.activity_schedule)
 
-        // Display the current date
         val scheduleDate = findViewById<TextView>(R.id.scheduleDate)
-
+        val firestoreEvents = findViewById<LinearLayout>(R.id.firestoreEvents)
+        val noClassesMessage = findViewById<TextView>(R.id.noClassesMessage)
         val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
+        val calendar = Calendar.getInstance()
 
-        // Set up bottom navigation
+        fun updateDate() {
+            scheduleDate.text = dateFormat.format(calendar.time).uppercase(Locale.getDefault())
+            renderEvents(firestoreEvents, noClassesMessage, calendar)
+        }
+
+        findViewById<Button>(R.id.previousDayButton).setOnClickListener {
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
+            updateDate()
+        }
+        findViewById<Button>(R.id.nextDayButton).setOnClickListener {
+            calendar.add(Calendar.DAY_OF_MONTH, 1)
+            updateDate()
+        }
+
+        val repository = AuthenticatedFirestoreRepository(FirebaseFirestore.getInstance())
+        eventListener = repository.observeCollection(
+            "events",
+            decoder = { id, data -> CanonicalCodecs.decodeScheduleEvent(id, data) },
+            onValue = { rows ->
+                @Suppress("UNCHECKED_CAST")
+                events = rows as List<ScheduleEvent>
+                updateDate()
+            },
+            onError = { cause ->
+                noClassesMessage.text = cause.localizedMessage ?: "Unable to load schedule"
+                noClassesMessage.visibility = View.VISIBLE
+            },
+        )
+
         val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-
         bottomNavigation.selectedItemId = R.id.nav_schedule
-
         bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_home -> {
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
-                    true
-                }
-
+                R.id.nav_home -> { startActivity(Intent(this, MainActivity::class.java)); finish(); true }
                 R.id.nav_schedule -> true
-
+                R.id.nav_profile -> { auth.signOut(); openAuth(); true }
                 else -> false
             }
         }
-
-        // Get the arrow buttons
-        val previousDayButton = findViewById<Button>(R.id.previousDayButton)
-        val nextDayButton = findViewById<Button>(R.id.nextDayButton)
-
-        // Store the currently selected date
-        val calendar = Calendar.getInstance()
-
-        // Function to update the displayed date
-        fun updateDate() {
-            scheduleDate.text = dateFormat.format(calendar.time)
-                .uppercase(Locale.getDefault())
-        }
-
-        // Display the initial date
         updateDate()
+    }
 
-        // Get the class cards and empty-day message
-        val databaseClassCard = findViewById<View>(R.id.databaseClassCard)
-        val programmingClassCard = findViewById<View>(R.id.programmingClassCard)
-        val noClassesMessage = findViewById<TextView>(R.id.noClassesMessage)
+    private fun renderEvents(container: LinearLayout, empty: TextView, calendar: Calendar) {
+        container.removeAllViews()
+        findViewById<View>(R.id.databaseClassCard).visibility = View.GONE
+        findViewById<View>(R.id.programmingClassCard).visibility = View.GONE
 
-        // Check whether the selected date is today
-        fun updateClasses() {
-
-            val today = Calendar.getInstance()
-
-            val isToday =
-                calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                        calendar.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
-
-            if (isToday) {
-                databaseClassCard.visibility = View.VISIBLE
-                programmingClassCard.visibility = View.VISIBLE
-                noClassesMessage.visibility = View.GONE
-            } else {
-                databaseClassCard.visibility = View.GONE
-                programmingClassCard.visibility = View.GONE
-                noClassesMessage.visibility = View.VISIBLE
-            }
+        val dayStart = Calendar.getInstance().apply {
+            timeInMillis = calendar.timeInMillis
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
+        val dayEndMillis = dayStart.timeInMillis + 86_400_000L
+        val dayEvents = events.filter { event ->
+            val startMillis = event.startAt.seconds * 1000L + event.startAt.nanoseconds / 1_000_000L
+            startMillis >= dayStart.timeInMillis && startMillis < dayEndMillis
+        }.sortedBy { it.startAt.seconds }
 
-        // Display the correct classes
-        updateClasses()
+        empty.visibility = if (dayEvents.isEmpty()) View.VISIBLE else View.GONE
+        empty.text = "No events scheduled for this day."
 
-        // Go to the previous day
-        previousDayButton.setOnClickListener {
-            calendar.add(Calendar.DAY_OF_MONTH, -1)
-            updateDate()
-            updateClasses()
+        dayEvents.forEach { event ->
+            val zone = runCatching { ZoneId.of(event.timeZoneId) }.getOrElse { ZoneId.systemDefault() }
+            val start = Instant.ofEpochSecond(event.startAt.seconds, event.startAt.nanoseconds.toLong())
+                .atZone(zone)
+            val end = Instant.ofEpochSecond(event.endAt.seconds, event.endAt.nanoseconds.toLong())
+                .atZone(zone)
+            val timeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
+            val row = TextView(this)
+            row.text = "${event.title}\n${timeFormatter.format(start)} – ${timeFormatter.format(end)}${if (event.location.isBlank()) "" else "\n${event.location}"}"
+            row.setTextColor(getColor(R.color.overseer_navy))
+            row.setPadding(24, 24, 24, 24)
+            container.addView(row)
         }
+    }
 
-        // Go to the next day
-        nextDayButton.setOnClickListener {
-            calendar.add(Calendar.DAY_OF_MONTH, 1)
-            updateDate()
-            updateClasses()
-        }
+    override fun onDestroy() {
+        eventListener?.remove()
+        eventListener = null
+        super.onDestroy()
+    }
+
+    private fun openAuth() {
+        val intent = Intent(this, AuthActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 }

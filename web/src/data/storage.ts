@@ -21,6 +21,16 @@ function validTime(value: unknown): value is string {
   return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
 }
 
+function validTimeZone(value: unknown): value is string {
+  if (typeof value !== 'string' || value.trim().length === 0) return false
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: value })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function createId(prefix = 'item'): string {
   const uuid = globalThis.crypto?.randomUUID?.()
   return `${prefix}-${uuid ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`}`
@@ -28,7 +38,7 @@ export function createId(prefix = 'item'): string {
 
 export function createEmptyData(): AppData {
   return {
-    preferences: { displayName: 'Student', timeFormat: '12h', firstDayOfWeek: 1 },
+    preferences: { displayName: 'Student', timeFormat: '12h', firstDayOfWeek: 1, timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' },
     courses: [], lessons: [], materials: [], tasks: [], events: [], plannerBlocks: [], focusSessions: [],
     focusTimer: { status: 'idle', mode: 'focus', durationSeconds: 25 * 60, remainingSeconds: 25 * 60, startedAt: null, segmentStartedAt: null, elapsedSeconds: 0, endsAt: null, courseId: null, taskId: null },
   }
@@ -71,6 +81,7 @@ export function validateAppData(value: unknown): value is AppData {
   const data = value as Partial<AppData>
   if (!data.preferences || typeof data.preferences.displayName !== 'string' || !['12h', '24h'].includes(data.preferences.timeFormat)) return false
   if (data.preferences.firstDayOfWeek !== 0 && data.preferences.firstDayOfWeek !== 1) return false
+  if (data.preferences.timeZoneId !== undefined && !validTimeZone(data.preferences.timeZoneId)) return false
   const rows = (key: keyof AppData): Record<string, unknown>[] | null => Array.isArray(data[key]) && (data[key] as unknown[]).every((entry) => !!entry && typeof entry === 'object' && typeof (entry as { id?: unknown }).id === 'string') ? data[key] as unknown as Record<string, unknown>[] : null
   const hasStrings = (row: Record<string, unknown>, fields: string[]) => fields.every((field) => typeof row[field] === 'string')
   const optionalId = (row: Record<string, unknown>, field: string) => row[field] === null || typeof row[field] === 'string'
@@ -95,6 +106,12 @@ export function validateAppData(value: unknown): value is AppData {
 function migrateAppData(value: AppData): AppData {
   return {
     ...value,
+    preferences: {
+      ...value.preferences,
+      timeZoneId: validTimeZone(value.preferences.timeZoneId)
+        ? value.preferences.timeZoneId
+        : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    },
     focusTimer: {
       ...value.focusTimer,
       segmentStartedAt: value.focusTimer.segmentStartedAt ?? value.focusTimer.startedAt ?? null,

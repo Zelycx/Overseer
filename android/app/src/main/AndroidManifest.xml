@@ -13,6 +13,12 @@
         android:theme="@style/Theme.Overseer">
         <activity
             android:name=".MainActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize">
+        </activity>
+
+        <activity
+            android:name=".AuthActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -25,6 +31,17 @@
         <activity
             android:name=".ScheduleActivity"
             android:exported="false" />
+        <activity
+            android:name=".TasksActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CoursesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FocusActivity"
+            android:exported="false" />
+        <activity android:name=".PlannerActivity" android:exported="false" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
 
     </application>
 

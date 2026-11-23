@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppData } from '../app/AppDataContext'
 import { addDays, durationLabel, formatDate, formatTime, isValidTime, localDateKey, parseLocalDate, startOfWeek } from '../data/dates'
 import { createId, loadLegacyAppData, parseImportData } from '../data/storage'
+import { saveUserPreferences, subscribeUserPreferences } from '../data/firestore/repositories/preferences'
 import type { Course, EventColor, EventType, FocusMode, Lesson, PlannerBlock, Priority, ScheduleEvent, StudyMaterial, Task } from '../types/app'
 import Badge from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -103,6 +104,8 @@ function TasksPage() {
   const [status, setStatus] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [courseFilter, setCourseFilter] = useState('all')
+  const [deletionError, setDeletionError] = useState('')
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
   const today = localDateKey()
   const updateShow = (value: boolean) => { setShowForm(value); if (!value && searchParams.has('new')) setSearchParams({}, { replace: true }) }
   const save = (task: Task) => { update({ tasks: data.tasks.some((item) => item.id === task.id) ? data.tasks.map((item) => item.id === task.id ? task : item) : [...data.tasks, task] }); setEditing(undefined); updateShow(false) }
@@ -111,11 +114,33 @@ function TasksPage() {
     return matchesStatus && (priorityFilter === 'all' || task.priority === priorityFilter) && (courseFilter === 'all' || task.courseId === courseFilter) && `${task.title} ${task.description}`.toLowerCase().includes(search.toLowerCase())
   }).sort((a, b) => Number(a.completed) - Number(b.completed) || (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999') || ({ High: 0, Medium: 1, Low: 2 }[a.priority] - { High: 0, Medium: 1, Low: 2 }[b.priority]))
   const toggle = (task: Task) => update({ tasks: data.tasks.map((item) => item.id === task.id ? { ...item, completed: !item.completed, completedAt: item.completed ? null : stamp() } : item) })
-  const remove = (task: Task) => { if (window.confirm(`Delete “${task.title}”?`)) update({ tasks: data.tasks.filter((item) => item.id !== task.id), plannerBlocks: data.plannerBlocks.map((block) => block.taskId === task.id ? { ...block, taskId: null } : block), focusTimer: data.focusTimer.taskId === task.id ? { ...data.focusTimer, taskId: null } : data.focusTimer }) }
+  const remove = async (task: Task) => {
+    if (!window.confirm(`Delete “${task.title}”? This uses the trusted deletion system.`)) return
+    setDeletionError('')
+    setDeletingTaskId(task.id)
+    try {
+      const { getFirebaseServices } = await import('../firebase/client')
+      const { functions } = getFirebaseServices()
+      const deletion = await import('../data/firestore/repositories/workspace')
+      const request = await deletion.requestTrustedTaskDeletion(functions, task.id)
+      let status = request
+      for (let attempt = 0; attempt < 20 && !status.completed && status.status !== 'failed'; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1000))
+        status = await deletion.getTrustedTaskDeletionStatus(functions, task.id, request.jobId)
+      }
+      if (!status.completed) throw new Error(status.status === 'failed' ? 'Trusted deletion failed.' : 'Trusted deletion is still in progress. Retry status from Tasks.')
+      update({ tasks: data.tasks.filter((item) => item.id !== task.id), plannerBlocks: data.plannerBlocks.map((block) => block.taskId === task.id ? { ...block, taskId: null } : block), focusTimer: data.focusTimer.taskId === task.id ? { ...data.focusTimer, taskId: null } : data.focusTimer })
+    } catch (cause) {
+      setDeletionError(cause instanceof Error ? cause.message : 'Task deletion failed.')
+    } finally {
+      setDeletingTaskId(null)
+    }
+  }
   return <div className="workspace-page"><SectionHeading title="Keep your next steps together." detail={`${data.tasks.filter((task) => !task.completed).length} pending · ${data.tasks.filter((task) => task.completed).length} completed`} action={<Button onClick={() => { setEditing(undefined); updateShow(!showForm) }}><Plus size={16} /> New task</Button>} />
+    {deletionError && <InlineNotice tone="error">{deletionError}</InlineNotice>}
     {(showForm || editing) && <Card className="editor-card" padding="medium"><h3>{editing ? 'Edit task' : 'Create a task'}</h3><TaskEditor initial={editing} courses={data.courses} onSave={save} onCancel={() => { setEditing(undefined); updateShow(false) }} /></Card>}
     <Card className="filter-card" padding="medium"><div className="filter-row task-status-filters">{[['all','All'],['pending','Pending'],['today','Due today'],['overdue','Overdue'],['completed','Completed']].map(([value,label]) => <button className={`filter-chip${status === value ? ' filter-chip--active' : ''}`} key={value} onClick={() => setStatus(value)}>{label}</button>)}</div><div className="filter-row"><label className="search-field"><Search size={15} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tasks" /></label><select aria-label="Filter by priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}><option value="all">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select><select aria-label="Filter by course" value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}><option value="all">All courses</option>{data.courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select></div></Card>
-    <div className="task-list">{list.map((task) => <Card className={`managed-task${task.completed ? ' managed-task--complete' : ''}`} key={task.id} padding="medium"><button className={`task-check task-check-button${task.completed ? ' task-check--done' : ''}`} aria-label={task.completed ? `Reopen ${task.title}` : `Complete ${task.title}`} onClick={() => toggle(task)}>{task.completed && <Check size={13} />}</button><div className="managed-task__main"><strong>{task.title}</strong>{task.description && <p>{task.description}</p>}<div className="managed-task__meta"><Badge tone={task.priority === 'High' ? 'amber' : task.priority === 'Medium' ? 'blue' : 'soft'}>{task.priority} priority</Badge><span>{courseName(data.courses, task.courseId)}</span><span>{task.dueDate ? `${formatDate(task.dueDate, { month: 'short', day: 'numeric', year: 'numeric' })}${task.dueTime ? ` · ${formatTime(task.dueTime, data.preferences.timeFormat)}` : ''}` : 'No due date'}</span>{!task.completed && task.dueDate && task.dueDate < today && <Badge tone="amber">Overdue</Badge>}</div></div><div className="row-actions"><button className="icon-button" aria-label={`Edit ${task.title}`} onClick={() => { setEditing(task); setShowForm(false) }}><Pencil size={16} /></button><button className="icon-button" aria-label={`Delete ${task.title}`} onClick={() => remove(task)}><Trash2 size={16} /></button></div></Card>)}{list.length === 0 && <Card padding="large">{empty(search ? 'No tasks match your search and filters.' : 'No tasks in this view yet. Create one to get started.')}</Card>}</div>
+    <div className="task-list">{list.map((task) => <Card className={`managed-task${task.completed ? ' managed-task--complete' : ''}`} key={task.id} padding="medium"><button className={`task-check task-check-button${task.completed ? ' task-check--done' : ''}`} aria-label={task.completed ? `Reopen ${task.title}` : `Complete ${task.title}`} onClick={() => toggle(task)}>{task.completed && <Check size={13} />}</button><div className="managed-task__main"><strong>{task.title}</strong>{task.description && <p>{task.description}</p>}<div className="managed-task__meta"><Badge tone={task.priority === 'High' ? 'amber' : task.priority === 'Medium' ? 'blue' : 'soft'}>{task.priority} priority</Badge><span>{courseName(data.courses, task.courseId)}</span><span>{task.dueDate ? `${formatDate(task.dueDate, { month: 'short', day: 'numeric', year: 'numeric' })}${task.dueTime ? ` · ${formatTime(task.dueTime, data.preferences.timeFormat)}` : ''}` : 'No due date'}</span>{!task.completed && task.dueDate && task.dueDate < today && <Badge tone="amber">Overdue</Badge>}</div></div><div className="row-actions"><button className="icon-button" aria-label={`Edit ${task.title}`} onClick={() => { setEditing(task); setShowForm(false) }}><Pencil size={16} /></button><button className="icon-button" aria-label={`Delete ${task.title}`} disabled={deletingTaskId === task.id} onClick={() => void remove(task)}><Trash2 size={16} /></button></div></Card>)}{list.length === 0 && <Card padding="large">{empty(search ? 'No tasks match your search and filters.' : 'No tasks in this view yet. Create one to get started.')}</Card>}</div>
   </div>
 }
 
@@ -172,10 +197,31 @@ function LibraryPage({ importing = false }: { importing?: boolean }) {
   const [editingCourse, setEditingCourse] = useState<Course | undefined>()
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
+  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null)
   const saveCourse = (course: Course) => { update({ courses: data.courses.some((item) => item.id === course.id) ? data.courses.map((item) => item.id === course.id ? course : item) : [...data.courses, course] }); setCourseForm(false); setEditingCourse(undefined) }
   const removeCourse = (course: Course) => {
-    if (!window.confirm(`Delete ${course.name} and its lessons? Associated tasks, events, and materials will remain but become unassigned.`)) return
-    update({ courses: data.courses.filter((item) => item.id !== course.id), lessons: data.lessons.filter((lesson) => lesson.courseId !== course.id), tasks: data.tasks.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), events: data.events.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), materials: data.materials.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), plannerBlocks: data.plannerBlocks.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), focusSessions: data.focusSessions.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), focusTimer: data.focusTimer.courseId === course.id ? { ...data.focusTimer, courseId: null } : data.focusTimer })
+    void (async () => {
+      if (!window.confirm(`Delete ${course.name} and all associated Course data? This uses the trusted deletion system.`)) return
+      setError('')
+      setDeletingCourseId(course.id)
+      try {
+        const { getFirebaseServices } = await import('../firebase/client')
+        const { functions } = getFirebaseServices()
+        const deletion = await import('../data/firestore/repositories/workspace')
+        const request = await deletion.requestTrustedCourseDeletion(functions, course.id)
+        let status = request
+        for (let attempt = 0; attempt < 20 && !status.completed && status.status !== 'failed'; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1000))
+          status = await deletion.getTrustedCourseDeletionStatus(functions, course.id, request.jobId)
+        }
+        if (!status.completed) throw new Error(status.status === 'failed' ? 'Trusted Course deletion failed.' : 'Trusted Course deletion is still in progress.')
+        update({ courses: data.courses.filter((item) => item.id !== course.id), lessons: data.lessons.filter((lesson) => lesson.courseId !== course.id), tasks: data.tasks.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), events: data.events.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), materials: data.materials.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), plannerBlocks: data.plannerBlocks.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), focusSessions: data.focusSessions.map((item) => item.courseId === course.id ? { ...item, courseId: null } : item), focusTimer: data.focusTimer.courseId === course.id ? { ...data.focusTimer, courseId: null } : data.focusTimer })
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Course deletion failed.')
+      } finally {
+        setDeletingCourseId(null)
+      }
+    })()
   }
   const addFile = async (file: File) => {
     setError('')
@@ -194,7 +240,7 @@ function LibraryPage({ importing = false }: { importing?: boolean }) {
   return <div className="workspace-page"><SectionHeading title={importing ? 'Bring your notes with you.' : 'A home for everything you’re learning.'} detail="Courses, lessons, and local study materials" action={importing ? <Link className="button button--secondary button--medium" to="/library"><ArrowLeft size={15} /> Back to library</Link> : <Button onClick={() => setCourseForm(!courseForm)}><Plus size={16} /> Add course</Button>} />
     {(courseForm || editingCourse) && <Card className="editor-card" padding="medium"><h3>{editingCourse ? 'Edit course' : 'Create a course'}</h3><CourseEditor initial={editingCourse} onSave={saveCourse} onCancel={() => { setCourseForm(false); setEditingCourse(undefined) }} /></Card>}
     {importing && <Card className="editor-card import-dropzone" padding="large"><FileUp size={24} /><h3>Import a local study material</h3><p>Text is extracted in your browser and saved only in this workspace.</p><label className="button button--primary button--medium">Choose TXT, Markdown, or HTML<input className="visually-hidden" type="file" accept=".txt,.md,.markdown,.html,.htm,text/plain,text/markdown,text/html" onChange={(e) => { const file = e.target.files?.[0]; if (file) void addFile(file); e.currentTarget.value = '' }} /></label>{error && <InlineNotice tone="error">{error}</InlineNotice>}</Card>}
-    {!importing && <><div className="library-heading"><SectionHeading title="Your courses" detail={`${data.courses.length} ${data.courses.length === 1 ? 'course' : 'courses'}`} /><Link className="text-link" to="/library/import"><FileUp size={15} /> Import material <ArrowRight size={14} /></Link></div><div className="library-course-grid">{data.courses.map((course) => { const lessons = data.lessons.filter((lesson) => lesson.courseId === course.id); const done = lessons.filter((lesson) => lesson.completed).length; return <Card className="library-course" key={course.id} padding="medium"><div className="library-course__top"><span className={`course-icon course-icon--${course.tint}`}><BookOpen size={17} /></span><span className="course-code">{course.code || 'COURSE'}</span><span className="row-actions"><button className="icon-button" aria-label={`Edit ${course.name}`} onClick={() => { setEditingCourse(course); setCourseForm(false) }}><Pencil size={15} /></button><button className="icon-button" aria-label={`Delete ${course.name}`} onClick={() => removeCourse(course)}><Trash2 size={15} /></button></span></div><Link className="library-course__title" to={`/courses/${course.id}`}>{course.name}</Link><p>{course.description || 'No description yet.'}</p><div className="course-progress"><ProgressBar value={lessons.length ? done / lessons.length * 100 : 0} label={`${course.name} progress`} /><span>{lessons.length ? Math.round(done / lessons.length * 100) : 0}%</span></div><small>{done} of {lessons.length} lessons complete</small></Card> })}{data.courses.length === 0 && <Card padding="medium">{empty('Create a course to organize lessons, materials, tasks, and focus sessions.')}</Card>}</div>
+    {!importing && <><div className="library-heading"><SectionHeading title="Your courses" detail={`${data.courses.length} ${data.courses.length === 1 ? 'course' : 'courses'}`} /><Link className="text-link" to="/library/import"><FileUp size={15} /> Import material <ArrowRight size={14} /></Link></div><div className="library-course-grid">{data.courses.map((course) => { const lessons = data.lessons.filter((lesson) => lesson.courseId === course.id); const done = lessons.filter((lesson) => lesson.completed).length; return <Card className="library-course" key={course.id} padding="medium"><div className="library-course__top"><span className={`course-icon course-icon--${course.tint}`}><BookOpen size={17} /></span><span className="course-code">{course.code || 'COURSE'}</span><span className="row-actions"><button className="icon-button" aria-label={`Edit ${course.name}`} onClick={() => { setEditingCourse(course); setCourseForm(false) }}><Pencil size={15} /></button><button className="icon-button" aria-label={`Delete ${course.name}`} disabled={deletingCourseId === course.id} onClick={() => removeCourse(course)}><Trash2 size={15} /></button></span></div><Link className="library-course__title" to={`/courses/${course.id}`}>{course.name}</Link><p>{course.description || 'No description yet.'}</p><div className="course-progress"><ProgressBar value={lessons.length ? done / lessons.length * 100 : 0} label={`${course.name} progress`} /><span>{lessons.length ? Math.round(done / lessons.length * 100) : 0}%</span></div><small>{done} of {lessons.length} lessons complete</small></Card> })}{data.courses.length === 0 && <Card padding="medium">{empty('Create a course to organize lessons, materials, tasks, and focus sessions.')}</Card>}</div>
       <div className="library-heading materials-heading"><SectionHeading title="Study materials" detail={`${data.materials.length} saved locally`} /><label className="search-field"><Search size={15} /><input aria-label="Search materials" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search materials" /></label></div><div className="materials-grid">{shownMaterials.map((material) => <MaterialCard key={material.id} material={material} courses={data.courses} onChange={(next) => update({ materials: data.materials.map((item) => item.id === next.id ? next : item) })} onDelete={() => { if (window.confirm(`Delete “${material.title}”?`)) update({ materials: data.materials.filter((item) => item.id !== material.id) }) }} />)}{shownMaterials.length === 0 && <Card padding="medium">{empty(search ? 'No materials match that search.' : 'Import a TXT, Markdown, or HTML file to add local study material.')}</Card>}</div></>}
   </div>
 }
@@ -216,9 +262,35 @@ function CoursePage() {
   const lessons = data.lessons.filter((lesson) => lesson.courseId === courseId)
   if (!course) return <NotFound message="This course may have been deleted or the link may be incorrect." />
   const saveLesson = (lesson: Lesson) => { lesson.courseId = course.id; update({ lessons: data.lessons.some((item) => item.id === lesson.id) ? data.lessons.map((item) => item.id === lesson.id ? lesson : item) : [...data.lessons, lesson] }); setForm(false) }
-  const remove = () => { if (window.confirm(`Delete ${course.name} and all of its lessons?`)) { update({ courses: data.courses.filter((item) => item.id !== course.id), lessons: data.lessons.filter((lesson) => lesson.courseId !== course.id), tasks: data.tasks.map((task) => task.courseId === course.id ? { ...task, courseId: null } : task), events: data.events.map((event) => event.courseId === course.id ? { ...event, courseId: null } : event), materials: data.materials.map((material) => material.courseId === course.id ? { ...material, courseId: null } : material), plannerBlocks: data.plannerBlocks.map((block) => block.courseId === course.id ? { ...block, courseId: null } : block), focusSessions: data.focusSessions.map((session) => session.courseId === course.id ? { ...session, courseId: null } : session), focusTimer: data.focusTimer.courseId === course.id ? { ...data.focusTimer, courseId: null } : data.focusTimer }); navigate('/library') } }
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const remove = () => {
+    void (async () => {
+      if (!window.confirm(`Delete ${course.name} and all associated trusted Course data?`)) return
+      setDeleting(true)
+      setDeleteError('')
+      try {
+        const { getFirebaseServices } = await import('../firebase/client')
+        const { functions } = getFirebaseServices()
+        const deletion = await import('../data/firestore/repositories/workspace')
+        const request = await deletion.requestTrustedCourseDeletion(functions, course.id)
+        let status = request
+        for (let attempt = 0; attempt < 20 && !status.completed && status.status !== 'failed'; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1000))
+          status = await deletion.getTrustedCourseDeletionStatus(functions, course.id, request.jobId)
+        }
+        if (!status.completed) throw new Error(status.status === 'failed' ? 'Trusted Course deletion failed.' : 'Trusted Course deletion is still in progress.')
+        navigate('/library')
+      } catch (cause) {
+        setDeleteError(cause instanceof Error ? cause.message : 'Course deletion failed.')
+      } finally {
+        setDeleting(false)
+      }
+    })()
+  }
   const done = lessons.filter((lesson) => lesson.completed).length
-  return <div className="workspace-page"><div className="detail-back"><Link className="text-link" to="/library"><ArrowLeft size={15} /> Study library</Link><div className="row-actions"><Button variant="secondary" size="small" onClick={() => setEditingCourse(!editingCourse)}><Pencil size={14} /> Edit course</Button><Button variant="secondary" size="small" onClick={remove}><Trash2 size={14} /> Delete</Button></div></div>
+  return <div className="workspace-page"><div className="detail-back"><Link className="text-link" to="/library"><ArrowLeft size={15} /> Study library</Link><div className="row-actions"><Button variant="secondary" size="small" onClick={() => setEditingCourse(!editingCourse)}><Pencil size={14} /> Edit course</Button><Button variant="secondary" size="small" disabled={deleting} onClick={remove}><Trash2 size={14} /> {deleting ? 'Deleting…' : 'Delete'}</Button></div></div>
+    {deleteError && <InlineNotice tone="error">{deleteError}</InlineNotice>}
     {editingCourse && <Card className="editor-card" padding="medium"><h3>Edit course</h3><CourseEditor initial={course} onSave={(next) => { update({ courses: data.courses.map((item) => item.id === course.id ? next : item) }); setEditingCourse(false) }} onCancel={() => setEditingCourse(false)} /></Card>}
     <Card className="course-detail-card" padding="large"><div className="course-detail-heading"><span className={`course-icon course-icon--${course.tint}`}><BookOpen size={20} /></span><div><span className="eyebrow">{course.code || 'COURSE'}</span><h2>{course.name}</h2></div></div><p>{course.description || 'Add a description to keep the course context close.'}</p>{course.instructor && <p className="course-instructor">Instructor: {course.instructor}</p>}<div className="course-progress course-detail-progress"><ProgressBar value={lessons.length ? done / lessons.length * 100 : 0} /><span>{lessons.length ? Math.round(done / lessons.length * 100) : 0}% · {done}/{lessons.length} lessons</span></div></Card>
     <SectionHeading title="Lessons" detail="Open a lesson or mark it complete" action={<Button onClick={() => setForm(!form)}><Plus size={16} /> Add lesson</Button>} />{form && <Card className="editor-card" padding="medium"><h3>Add a lesson</h3><LessonEditor onSave={saveLesson} onCancel={() => setForm(false)} /></Card>}
@@ -301,13 +373,65 @@ function SettingsPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [hasLegacyData] = useState(() => loadLegacyAppData() !== null)
-  const save = (event: FormEvent) => { event.preventDefault(); update({ preferences: { ...data.preferences, displayName: name.trim() || 'Student' } }); setMessage('Preferences saved.'); setError('') }
+  const [cloudPreferenceStatus, setCloudPreferenceStatus] = useState<'loading' | 'ready' | 'offline' | 'error'>('loading')
+  const [savingPreferences, setSavingPreferences] = useState(false)
+  useEffect(() => {
+    let active = true
+    let unsubscribe: (() => void) | undefined
+    void import('../firebase/client').then(({ getFirebaseServices }) => {
+      if (!active) return
+      try {
+        const { auth, firestore } = getFirebaseServices()
+        unsubscribe = subscribeUserPreferences(auth, firestore, (remote, fromCache) => {
+          if (!active) return
+          setCloudPreferenceStatus(fromCache ? 'offline' : 'ready')
+          if (remote) {
+            setName(remote.displayName)
+            update({ preferences: { displayName: remote.displayName, timeFormat: remote.timeFormat, firstDayOfWeek: remote.firstDayOfWeek, timeZoneId: remote.timeZoneId } })
+          }
+        }, (cause) => {
+          if (!active) return
+          setCloudPreferenceStatus('error')
+          setError(cause.message)
+        })
+      } catch (cause) {
+        if (!active) return
+        setCloudPreferenceStatus('error')
+        setError(cause instanceof Error ? cause.message : 'Cloud preferences are unavailable.')
+      }
+    }).catch((cause: unknown) => {
+      if (!active) return
+      setCloudPreferenceStatus('error')
+      setError(cause instanceof Error ? cause.message : 'Cloud preferences are unavailable.')
+    })
+    return () => { active = false; unsubscribe?.() }
+  }, [update])
+  const save = async (event: FormEvent) => {
+    event.preventDefault()
+    setError('')
+    setMessage('')
+    const preferences = { ...data.preferences, displayName: name.trim() || 'Student' }
+    try { new Intl.DateTimeFormat('en', { timeZone: preferences.timeZoneId }) } catch { setError('Enter a valid IANA timezone, such as Asia/Manila.'); return }
+    update({ preferences })
+    setSavingPreferences(true)
+    try {
+      const { auth, firestore } = await import('../firebase/client').then(({ getFirebaseServices }) => getFirebaseServices())
+      await saveUserPreferences(auth, firestore, preferences)
+      setCloudPreferenceStatus('ready')
+      setMessage('Preferences saved in this browser and synchronized to your Overseer account.')
+    } catch (cause) {
+      setCloudPreferenceStatus('error')
+      setError(`Your preferences remain saved in this browser, but cloud synchronization failed: ${cause instanceof Error ? cause.message : 'unknown error'}`)
+    } finally {
+      setSavingPreferences(false)
+    }
+  }
   const exportData = () => { const blob = new Blob([JSON.stringify({ version: 2, data }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `overseer-backup-${localDateKey()}.json`; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); setMessage('Your data export has been downloaded.') }
   const exportLegacyData = () => { const legacyData = loadLegacyAppData(); if (!legacyData) { setError('No valid legacy local workspace was found.'); return } const blob = new Blob([JSON.stringify({ version: 2, data: legacyData }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `overseer-legacy-backup-${localDateKey()}.json`; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); setMessage('The previous local workspace backup has been downloaded. Import it only into the account that owns that data.') }
   const readImport = async (file: File) => { setError(''); setMessage(''); try { const imported = parseImportData(await file.text()); if (!window.confirm('Import this backup and replace the current local workspace data?')) return; importData(imported); setName(imported.preferences.displayName); setMessage('Workspace data imported successfully.') } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not read this data file.') } }
   const reset = () => { if (window.confirm('Reset all local Overseer data? This permanently deletes your courses, lessons, materials, tasks, schedule, plans, and focus history from this browser.')) { resetData(); setName('Student'); setMessage('Your local workspace has been reset.') } }
-  return <div className="workspace-page"><SectionHeading title="Make your study space work for you." detail="Local workspace data is isolated by signed-in account in this browser; it does not sync to other devices yet." />{message && <InlineNotice tone="success">{message}</InlineNotice>}{error && <InlineNotice tone="error">{error}</InlineNotice>}
-    <Card className="settings-card" padding="large"><form className="editor-form" onSubmit={save}><h3>Local preferences</h3><p className="muted-copy">Your display name appears in the dashboard and workspace header.</p><div className="form-grid"><Field label="Display name"><input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></Field><Field label="Time format"><select value={data.preferences.timeFormat} onChange={(e) => update({ preferences: { ...data.preferences, timeFormat: e.target.value as '12h' | '24h' } })}><option value="12h">12-hour (3:30 PM)</option><option value="24h">24-hour (15:30)</option></select></Field><Field label="First day of the week"><select value={data.preferences.firstDayOfWeek} onChange={(e) => update({ preferences: { ...data.preferences, firstDayOfWeek: Number(e.target.value) as 0 | 1 } })}><option value={1}>Monday</option><option value={0}>Sunday</option></select></Field></div><Button type="submit">Save preferences</Button></form></Card>
+  return <div className="workspace-page"><SectionHeading title="Make your study space work for you." detail="Preferences sync through Firestore. Courses and other workspace records remain browser-local until their cloud workflows are connected." />{message && <InlineNotice tone="success">{message}</InlineNotice>}{error && <InlineNotice tone="error">{error}</InlineNotice>}
+    <Card className="settings-card" padding="large"><form className="editor-form" onSubmit={(event) => void save(event)}><h3>Account preferences</h3><p className="muted-copy">Your display name, time format, week start, and timezone are synced to your account. Sync status: {cloudPreferenceStatus === 'loading' ? 'connecting' : cloudPreferenceStatus === 'ready' ? 'online' : cloudPreferenceStatus === 'offline' ? 'using cached data' : 'error'}.</p><div className="form-grid"><Field label="Display name"><input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></Field><Field label="Time format"><select value={data.preferences.timeFormat} onChange={(e) => update({ preferences: { ...data.preferences, timeFormat: e.target.value as '12h' | '24h' } })}><option value="12h">12-hour (3:30 PM)</option><option value="24h">24-hour (15:30)</option></select></Field><Field label="First day of the week"><select value={data.preferences.firstDayOfWeek} onChange={(e) => update({ preferences: { ...data.preferences, firstDayOfWeek: Number(e.target.value) as 0 | 1 } })}><option value={1}>Monday</option><option value={0}>Sunday</option></select></Field><Field label="IANA timezone"><input value={data.preferences.timeZoneId} onChange={(e) => update({ preferences: { ...data.preferences, timeZoneId: e.target.value } })} placeholder="Asia/Manila" required /></Field></div><Button type="submit" disabled={savingPreferences}>{savingPreferences ? 'Saving preferences…' : 'Save preferences'}</Button></form></Card>
     <Card className="settings-card" padding="large"><h3>Backup and restore</h3><p className="muted-copy">Export a JSON backup or replace this workspace with a previous export.</p><div className="form-actions"><Button variant="secondary" onClick={exportData}>Export application data</Button><label className="button button--secondary button--medium">Import JSON backup<input className="visually-hidden" type="file" accept="application/json,.json" onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); e.currentTarget.value = '' }} /></label></div></Card>
     {hasLegacyData && <Card className="settings-card" padding="large"><h3>Previous browser workspace</h3><p className="muted-copy">An older workspace without an account association is still stored in this browser. It was not copied into this account. Export it to review or import it yourself; only do that if you own the data.</p><Button variant="secondary" onClick={exportLegacyData}>Export previous workspace</Button></Card>}
     <Card className="settings-card settings-danger" padding="large"><h3>Reset application data</h3><p className="muted-copy">This clears all local workspace records and restores a blank workspace. This cannot be undone.</p><Button variant="secondary" onClick={reset}><Trash2 size={15} /> Reset local data</Button></Card>

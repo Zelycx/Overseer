@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app'
 import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth'
 import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore'
+import { connectFunctionsEmulator, getFunctions, type Functions } from 'firebase/functions'
 import {
   initializeIfConfigured,
   requireFirebaseConfiguration,
@@ -13,6 +14,7 @@ const configurationResult = resolveFirebaseConfiguration(import.meta.env, import
 let firebaseApp: FirebaseApp | null = null
 let firebaseAuth: Auth | null = null
 let firestore: Firestore | null = null
+let functions: Functions | null = null
 
 function initializeFirebase(configuration: FirebaseClientConfiguration): void {
   const existingApps = getApps()
@@ -30,6 +32,7 @@ function initializeFirebase(configuration: FirebaseClientConfiguration): void {
   firebaseApp = app
   firebaseAuth = getAuth(app)
   firestore = getFirestore(app)
+  functions = getFunctions(app)
 
   if (configuration.useEmulators) {
     // Vite can reevaluate this module during HMR while Firebase retains its app singleton.
@@ -37,6 +40,7 @@ function initializeFirebase(configuration: FirebaseClientConfiguration): void {
     if (!globalState.__overseerFirebaseEmulatorsConnected) {
       connectAuthEmulator(firebaseAuth, 'http://127.0.0.1:9099', { disableWarnings: true })
       connectFirestoreEmulator(firestore, '127.0.0.1', 8080)
+      connectFunctionsEmulator(functions, '127.0.0.1', 5001)
       globalState.__overseerFirebaseEmulatorsConnected = true
     }
     console.info('Firebase Emulator Suite selected: project demo-overseer-web; Auth 127.0.0.1:9099; Firestore 127.0.0.1:8080.')
@@ -55,10 +59,11 @@ if (!configurationResult.error && !configurationResult.config) {
   console.info('Firebase is not configured. Overseer will start with its existing localStorage data only.')
 }
 
-export function getFirebaseServices(): { app: FirebaseApp; auth: Auth; firestore: Firestore } {
+export function getFirebaseServices(): { app: FirebaseApp; auth: Auth; firestore: Firestore; functions: Functions } {
   requireFirebaseConfiguration(configurationResult)
   if (!firebaseConfigured || !firebaseApp || !firebaseAuth || !firestore) {
     throw new Error('Firebase is unavailable because its initialization did not complete.')
   }
-  return { app: firebaseApp, auth: firebaseAuth, firestore }
+  if (!functions) throw new Error('Firebase Functions are unavailable.')
+  return { app: firebaseApp, auth: firebaseAuth, firestore, functions }
 }

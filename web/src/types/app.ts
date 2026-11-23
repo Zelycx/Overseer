@@ -8,6 +8,7 @@ export interface UserPreferences {
   displayName: string
   timeFormat: '12h' | '24h'
   firstDayOfWeek: 0 | 1
+  timeZoneId: string
 }
 
 export interface Course {
