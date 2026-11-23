@@ -35,7 +35,7 @@ class TasksActivity : AppCompatActivity() {
         body.removeAllViews()
         body.addView(WorkspaceUi.button(this, "Add task", R.drawable.ic_plus) { editTask(null) })
         val data = WorkspaceRepository.load(this)
-        val search = EditText(this).apply { hint = "Search tasks"; setSingleLine(true); setText(query) }
+        val search = WorkspaceUi.editText(this).apply { hint = "Search tasks"; setSingleLine(true); setText(query) }
         body.addView(search)
         val filterRow = WorkspaceUi.row(this)
         val statuses = listOf("All tasks", "Active", "Completed", "Due today", "Overdue")
@@ -75,7 +75,7 @@ class TasksActivity : AppCompatActivity() {
         rows.forEach { task ->
             val content = WorkspaceUi.column(this, 12)
             val row = WorkspaceUi.row(this)
-            val check = CheckBox(this).apply { isChecked = task.completed; setOnCheckedChangeListener { _, checked -> saveTask(task.copy(completed = checked, completedAt = if (checked) Instant.now().toString() else null)); render() } }
+            val check = WorkspaceUi.checkBox(this).apply { isChecked = task.completed; setOnCheckedChangeListener { _, checked -> saveTask(task.copy(completed = checked, completedAt = if (checked) Instant.now().toString() else null)); render() } }
             row.addView(check)
             val titleColumn = WorkspaceUi.column(this, 2)
             titleColumn.addView(WorkspaceUi.text(this, task.title, 15f, WorkspaceUi.NAVY, true))
@@ -108,7 +108,7 @@ class TasksActivity : AppCompatActivity() {
     private fun editTask(existing: WorkspaceTask?) {
         val data = WorkspaceRepository.load(this)
         val form = WorkspaceUi.column(this, 4)
-        fun field(hint: String, value: String = "", type: Int = InputType.TYPE_CLASS_TEXT, multiline: Boolean = false) = EditText(this).apply {
+        fun field(hint: String, value: String = "", type: Int = InputType.TYPE_CLASS_TEXT, multiline: Boolean = false) = WorkspaceUi.editText(this).apply {
             this.hint = hint; setText(value); inputType = type
             if (multiline) { minLines = 2; maxLines = 4 }
             form.addView(this)

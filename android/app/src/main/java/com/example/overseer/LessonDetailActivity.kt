@@ -50,7 +50,7 @@ class LessonDetailActivity : AppCompatActivity() {
             addView(WorkspaceUi.button(this@LessonDetailActivity, "Add material", R.drawable.ic_plus) { editMaterial(null) }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             addView(WorkspaceUi.subtleButton(this@LessonDetailActivity, "Import file", R.drawable.ic_file_up) { openTextFile.launch(arrayOf("text/plain", "text/markdown", "text/html", "application/xhtml+xml")) })
         })
-        val search = EditText(this).apply { hint = "Search course materials"; setText(materialQuery) }
+        val search = WorkspaceUi.editText(this).apply { hint = "Search course materials"; setText(materialQuery) }
         body.addView(search)
         materialsContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         body.addView(materialsContainer)
@@ -84,7 +84,7 @@ class LessonDetailActivity : AppCompatActivity() {
     }
     private fun editLesson(existing: WorkspaceLesson?) {
         val form = WorkspaceUi.column(this, 4)
-        fun input(hint: String, value: String, multi: Boolean = false) = EditText(this).apply { this.hint = hint; setText(value); inputType = if (multi) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE else InputType.TYPE_CLASS_TEXT; if (multi) { minLines = 3; maxLines = 7 }; form.addView(this) }
+        fun input(hint: String, value: String, multi: Boolean = false) = WorkspaceUi.editText(this).apply { this.hint = hint; setText(value); inputType = if (multi) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE else InputType.TYPE_CLASS_TEXT; if (multi) { minLines = 3; maxLines = 7 }; form.addView(this) }
         val title = input("Lesson title", existing?.title.orEmpty()); val description = input("Description", existing?.description.orEmpty()); val content = input("Lesson content", existing?.content.orEmpty(), true)
         val dialog = AlertDialog.Builder(this).setTitle(if (existing == null) "Add lesson" else "Edit lesson").setView(form).setNegativeButton("Cancel", null).setPositiveButton("Save", null).create()
         dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
@@ -97,8 +97,8 @@ class LessonDetailActivity : AppCompatActivity() {
         } }; dialog.show()
     }
     private fun editMaterial(existing: WorkspaceMaterial?) {
-        val form = WorkspaceUi.column(this, 4); val title = EditText(this).apply { hint = "Material title"; setText(existing?.title.orEmpty()); form.addView(this) }
-        val text = EditText(this).apply { hint = "Paste notes or extracted text"; setText(existing?.content.orEmpty()); minLines = 5; maxLines = 12; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE; form.addView(this) }
+        val form = WorkspaceUi.column(this, 4); val title = WorkspaceUi.editText(this).apply { hint = "Material title"; setText(existing?.title.orEmpty()); form.addView(this) }
+        val text = WorkspaceUi.editText(this).apply { hint = "Paste notes or extracted text"; setText(existing?.content.orEmpty()); minLines = 5; maxLines = 12; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE; form.addView(this) }
         val data = WorkspaceRepository.load(this); val courses = listOf("No course") + data.courses.map { it.name }; val course = WorkspaceUi.spinner(this, courses, (data.courses.indexOfFirst { it.id == existing?.courseId } + 1).coerceAtLeast(0)); form.addView(course)
         val dialog = AlertDialog.Builder(this).setTitle(if (existing == null) "Add material" else "Edit material").setView(form).setNegativeButton("Cancel", null).setPositiveButton("Save", null).create()
         dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {

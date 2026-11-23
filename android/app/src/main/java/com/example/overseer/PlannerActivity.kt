@@ -106,7 +106,7 @@ class PlannerActivity : AppCompatActivity() {
         } else blocks.forEachIndexed { index, block ->
             val content = WorkspaceUi.column(this, 12)
             val row = WorkspaceUi.row(this)
-            val done = CheckBox(this).apply { isChecked = block.completed }
+            val done = WorkspaceUi.checkBox(this).apply { isChecked = block.completed }
             done.setOnCheckedChangeListener { _, value -> saveBlock(block.copy(completed = value)); render() }
             row.addView(done)
             val info = WorkspaceUi.column(this, 2)
@@ -145,7 +145,7 @@ class PlannerActivity : AppCompatActivity() {
     private fun editBlock(existing: WorkspaceBlock?, linkedTask: WorkspaceTask? = null) {
         val data = WorkspaceRepository.load(this)
         val form = WorkspaceUi.column(this, 4)
-        fun input(hint: String, value: String, type: Int = InputType.TYPE_CLASS_TEXT) = EditText(this).apply {
+        fun input(hint: String, value: String, type: Int = InputType.TYPE_CLASS_TEXT) = WorkspaceUi.editText(this).apply {
             this.hint = hint; setText(value); inputType = type; form.addView(this)
         }
         val title = input("Block title", existing?.title ?: linkedTask?.title.orEmpty())

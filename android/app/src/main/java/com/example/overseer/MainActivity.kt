@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         }
         visibleTasks.forEachIndexed { index, task ->
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            val checkbox = CheckBox(this).apply {
+            val checkbox = WorkspaceUi.checkBox(this).apply {
                 text = task.title; textSize = 15f; setTextColor(WorkspaceUi.NAVY); minHeight = WorkspaceUi.dp(this@MainActivity, 48)
                 setOnCheckedChangeListener { _, checked ->
                     WorkspaceRepository.update(this@MainActivity) { current -> current.copy(tasks = current.tasks.map { if (it.id == task.id) it.copy(completed = checked, completedAt = if (checked) Instant.now().toString() else null) else it }) }
@@ -157,7 +157,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun addQuickTask() {
-        val input = EditText(this).apply { hint = "Enter task title"; setSingleLine(true) }
+        val input = WorkspaceUi.editText(this).apply { hint = "Enter task title"; setSingleLine(true) }
         val dialog = AlertDialog.Builder(this).setTitle("Add task").setView(input).setNegativeButton("Cancel", null).setPositiveButton("Add", null).create()
         dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val title = input.text.toString().trim()

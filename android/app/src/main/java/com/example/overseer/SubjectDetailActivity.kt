@@ -80,7 +80,7 @@ class SubjectDetailActivity : AppCompatActivity() {
 
     private fun openLessonEditor(existing: WorkspaceLesson?) {
         val form = WorkspaceUi.column(this, 4)
-        fun field(hint: String, value: String, multi: Boolean = false) = EditText(this).apply { this.hint = hint; setText(value); if (multi) { minLines = 2; maxLines = 5; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE }; form.addView(this) }
+        fun field(hint: String, value: String, multi: Boolean = false) = WorkspaceUi.editText(this).apply { this.hint = hint; setText(value); if (multi) { minLines = 2; maxLines = 5; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE }; form.addView(this) }
         val title = field("Lesson title", existing?.title.orEmpty()); val description = field("Description", existing?.description.orEmpty()); val content = field("Lesson content", existing?.content.orEmpty(), true)
         val dialog = AlertDialog.Builder(this).setTitle(if (existing == null) "Add lesson" else "Edit lesson").setView(form).setNegativeButton("Cancel", null).setPositiveButton("Save", null).create()
         dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {

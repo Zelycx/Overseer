@@ -107,7 +107,7 @@ class ScheduleActivity : AppCompatActivity() {
         var startTime = existing?.startTime ?: "09:00"
         var endTime = existing?.endTime ?: "10:00"
         val form = WorkspaceUi.column(this, 4)
-        fun input(hint: String, value: String, multi: Boolean = false) = EditText(this).apply { this.hint = hint; setText(value); if (multi) { minLines = 2; maxLines = 4; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE }; form.addView(this) }
+        fun input(hint: String, value: String, multi: Boolean = false) = WorkspaceUi.editText(this).apply { this.hint = hint; setText(value); if (multi) { minLines = 2; maxLines = 4; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE }; form.addView(this) }
         val title = input("Event title", existing?.title.orEmpty())
         val description = input("Description", existing?.description.orEmpty(), true)
         val location = input("Location", existing?.location.orEmpty())
@@ -123,7 +123,7 @@ class ScheduleActivity : AppCompatActivity() {
         form.addView(WorkspaceUi.text(this, "Event type", 13f, WorkspaceUi.MUTED)); val types = listOf("class", "study", "personal", "other"); val type = WorkspaceUi.spinner(this, types, types.indexOf(existing?.type).coerceAtLeast(0)); form.addView(type)
         form.addView(WorkspaceUi.text(this, "Event color", 13f, WorkspaceUi.MUTED)); val colors = listOf("navy", "lime", "blue", "amber"); val color = WorkspaceUi.spinner(this, colors, colors.indexOf(existing?.color).coerceAtLeast(0)); form.addView(color)
         form.addView(WorkspaceUi.text(this, "Course", 13f, WorkspaceUi.MUTED)); val courseOptions = listOf("No course") + data.courses.map { it.name }; val course = WorkspaceUi.spinner(this, courseOptions, (data.courses.indexOfFirst { it.id == existing?.courseId } + 1).coerceAtLeast(0)); form.addView(course)
-        val repeat = CheckBox(this).apply { text = "Repeat weekly"; isChecked = existing?.repeatWeekly ?: false }; form.addView(repeat)
+        val repeat = WorkspaceUi.checkBox(this).apply { text = "Repeat weekly"; isChecked = existing?.repeatWeekly ?: false }; form.addView(repeat)
         val scroll = android.widget.ScrollView(this).apply { addView(form) }
         val dialog = AlertDialog.Builder(this).setTitle(if (existing == null) "Add schedule event" else "Edit schedule event").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Save", null).create()
         dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {

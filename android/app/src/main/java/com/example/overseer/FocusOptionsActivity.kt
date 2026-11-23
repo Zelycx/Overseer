@@ -24,7 +24,7 @@ class FocusOptionsActivity : AppCompatActivity() {
         val modes = listOf("focus", "shortBreak", "longBreak")
         val labels = listOf("Focus", "Short break", "Long break")
         val mode = WorkspaceUi.spinner(this, labels, modes.indexOf(timer.mode).coerceAtLeast(0)); form.addView(mode)
-        val duration = EditText(this).apply { hint = "Duration in minutes"; inputType = InputType.TYPE_CLASS_NUMBER; setText((timer.durationSeconds / 60).coerceAtLeast(1).toString()) }; form.addView(duration)
+        val duration = WorkspaceUi.editText(this).apply { hint = "Duration in minutes"; inputType = InputType.TYPE_CLASS_NUMBER; setText((timer.durationSeconds / 60).coerceAtLeast(1).toString()) }; form.addView(duration)
         form.addView(WorkspaceUi.text(this, "Link a task", 13f, WorkspaceUi.MUTED))
         val taskItems = listOf("No task") + data.tasks.map { it.title }; val task = WorkspaceUi.spinner(this, taskItems, (data.tasks.indexOfFirst { it.id == timer.taskId } + 1).coerceAtLeast(0)); form.addView(task)
         form.addView(WorkspaceUi.text(this, "Link a course", 13f, WorkspaceUi.MUTED))

@@ -15,10 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.Spinner
-import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 
@@ -72,10 +69,11 @@ class ProfileActivity : AppCompatActivity() {
         }
         findViewById<android.widget.TextView>(R.id.importDataOption).setOnClickListener { importBackup.launch(arrayOf("application/json", "text/json", "text/plain")) }
         findViewById<android.widget.TextView>(R.id.resetDataOption).setOnClickListener { confirmReset() }
+        val recoveryDivider = findViewById<android.view.View>(R.id.recoveryDivider)
         findViewById<android.widget.TextView>(R.id.exportRecoveryOption).apply {
             val available = WorkspaceRepository.recoveryFile(this@ProfileActivity) != null
             visibility = if (available) android.view.View.VISIBLE else android.view.View.GONE
-            findViewById<android.view.View>(R.id.recoveryDivider).visibility = if (available) android.view.View.VISIBLE else android.view.View.GONE
+            recoveryDivider.visibility = if (available) android.view.View.VISIBLE else android.view.View.GONE
             setOnClickListener { exportRecovery.launch("overseer-recovery-copy.json") }
         }
 
@@ -144,12 +142,12 @@ class ProfileActivity : AppCompatActivity() {
 
 
     private fun showEditProfileDialog() {
-        val nameInput = android.widget.EditText(this).apply {
+        val nameInput = WorkspaceUi.editText(this).apply {
             hint = "Enter your name"
             setSingleLine(true)
         }
 
-        val emailInput = android.widget.EditText(this).apply {
+        val emailInput = WorkspaceUi.editText(this).apply {
             hint = "Enter your email"
             setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
@@ -309,10 +307,10 @@ class ProfileActivity : AppCompatActivity() {
         val data = WorkspaceRepository.load(this)
         val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(48, 8, 48, 0) }
         form.addView(android.widget.TextView(this).apply { text = "Time format" })
-        val time = Spinner(this).apply { adapter = ArrayAdapter(this@ProfileActivity, android.R.layout.simple_spinner_dropdown_item, listOf("12-hour", "24-hour")); setSelection(if (data.preferences.timeFormat == "24h") 1 else 0) }
+        val time = WorkspaceUi.spinner(this, listOf("12-hour", "24-hour"), if (data.preferences.timeFormat == "24h") 1 else 0)
         form.addView(time)
-        form.addView(android.widget.TextView(this).apply { text = "First day of week" })
-        val week = Spinner(this).apply { adapter = ArrayAdapter(this@ProfileActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Monday", "Sunday")); setSelection(if (data.preferences.firstDayOfWeek == 0) 1 else 0) }
+        form.addView(WorkspaceUi.text(this, "First day of week"))
+        val week = WorkspaceUi.spinner(this, listOf("Monday", "Sunday"), if (data.preferences.firstDayOfWeek == 0) 1 else 0)
         form.addView(week)
         AlertDialog.Builder(this).setTitle("Time and week preferences").setView(form).setNegativeButton("Cancel", null).setPositiveButton("Save") { _, _ ->
             WorkspaceRepository.update(this) { current -> current.copy(preferences = current.preferences.copy(timeFormat = if (time.selectedItemPosition == 1) "24h" else "12h", firstDayOfWeek = if (week.selectedItemPosition == 1) 0 else 1)) }
@@ -324,25 +322,25 @@ class ProfileActivity : AppCompatActivity() {
         val current = WorkspaceRepository.load(this).preferences
         val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(48, 8, 48, 0) }
         val modes = listOf("system", "light", "dark")
-        form.addView(android.widget.TextView(this).apply { text = "Android color mode" })
-        val mode = Spinner(this).apply { adapter = ArrayAdapter(this@ProfileActivity, android.R.layout.simple_spinner_dropdown_item, listOf("System", "Light", "Dark")); setSelection(modes.indexOf(current.appearanceMode).coerceAtLeast(0)) }
+        form.addView(WorkspaceUi.text(this, "Color mode"))
+        val mode = WorkspaceUi.spinner(this, listOf("System", "Light", "Dark"), modes.indexOf(current.appearanceMode).coerceAtLeast(0))
         form.addView(mode)
         val presets = listOf("studio", "midnight", "paper", "high-contrast")
-        form.addView(android.widget.TextView(this).apply { text = "Web appearance preset" })
-        val preset = Spinner(this).apply { adapter = ArrayAdapter(this@ProfileActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Studio", "Midnight", "Paper", "High contrast")); setSelection(presets.indexOf(current.appearancePreset).coerceAtLeast(0)) }
+        form.addView(WorkspaceUi.text(this, "Appearance preset"))
+        val preset = WorkspaceUi.spinner(this, listOf("Studio", "Midnight", "Paper", "High contrast"), presets.indexOf(current.appearancePreset).coerceAtLeast(0))
         form.addView(preset)
         val accents = listOf("olive", "blue", "terracotta", "violet", "teal")
-        form.addView(android.widget.TextView(this).apply { text = "Web accent color" })
-        val accent = Spinner(this).apply { adapter = ArrayAdapter(this@ProfileActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Olive / lime", "Blue", "Terracotta", "Violet", "Teal")); setSelection(accents.indexOf(current.accentColor).coerceAtLeast(0)) }
+        form.addView(WorkspaceUi.text(this, "Accent color"))
+        val accent = WorkspaceUi.spinner(this, listOf("Olive / lime", "Blue", "Terracotta", "Violet", "Teal"), accents.indexOf(current.accentColor).coerceAtLeast(0))
         form.addView(accent)
         val densities = listOf("comfortable", "compact")
-        form.addView(android.widget.TextView(this).apply { text = "Web layout density" })
-        val density = Spinner(this).apply { adapter = ArrayAdapter(this@ProfileActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Comfortable", "Compact")); setSelection(densities.indexOf(current.density).coerceAtLeast(0)) }
+        form.addView(WorkspaceUi.text(this, "Layout density"))
+        val density = WorkspaceUi.spinner(this, listOf("Comfortable", "Compact"), densities.indexOf(current.density).coerceAtLeast(0))
         form.addView(density)
-        val reducedMotion = android.widget.CheckBox(this).apply { text = "Reduce motion in Web app"; isChecked = current.reducedMotion }
+        val reducedMotion = WorkspaceUi.checkBox(this).apply { text = "Reduce motion in Web app"; isChecked = current.reducedMotion }
         form.addView(reducedMotion)
         val scroll = android.widget.ScrollView(this).apply { isFillViewport = true; addView(form) }
-        AlertDialog.Builder(this).setTitle("Appearance").setMessage("Choose light, dark, or follow your device on Android. Web appearance options are saved for the browser app; Android keeps its navy and lime design.").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Save") { _, _ ->
+        AlertDialog.Builder(this).setTitle("Appearance").setMessage("Color mode, appearance preset, accent color, and density apply throughout the Android app. Reduce motion applies to the Web app.").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Save") { _, _ ->
             val selectedMode = modes[mode.selectedItemPosition]
             WorkspaceRepository.update(this) { data -> data.copy(preferences = data.preferences.copy(
                 appearanceMode = selectedMode,
@@ -352,17 +350,23 @@ class ProfileActivity : AppCompatActivity() {
                 reducedMotion = reducedMotion.isChecked,
             )) }
             applyAppearance(selectedMode)
+            val currentDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            val systemDark = applicationContext.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            val selectedDark = when (selectedMode) { "dark" -> true; "light" -> false; else -> systemDark }
+            if (currentDark == selectedDark) recreate()
             Toast.makeText(this, "Appearance preferences saved", Toast.LENGTH_SHORT).show()
         }.show()
     }
 
     private fun applyAppearance(mode: String) {
-        val systemIsDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-        WorkspaceUi.setDarkMode(when (mode) {
+        val preferences = WorkspaceRepository.load(this).preferences
+        val systemIsDark = applicationContext.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        val dark = when (mode) {
             "dark" -> true
             "light" -> false
             else -> systemIsDark
-        })
+        }
+        WorkspaceUi.configure(preferences, dark)
         AppCompatDelegate.setDefaultNightMode(when (mode) {
             "dark" -> AppCompatDelegate.MODE_NIGHT_YES
             "light" -> AppCompatDelegate.MODE_NIGHT_NO

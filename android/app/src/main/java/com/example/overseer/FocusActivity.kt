@@ -107,15 +107,11 @@ class FocusActivity : AppCompatActivity() {
                     buttonId
                 )
 
-                val color = if (minutes == selectedDurationMinutes) {
-                    R.color.overseer_lime
-                } else {
-                    android.R.color.darker_gray
-                }
+                val color = if (minutes == selectedDurationMinutes) WorkspaceUi.LIME else WorkspaceUi.SUBTLE
 
                 button.backgroundTintList =
                     android.content.res.ColorStateList.valueOf(
-                        getColor(color)
+                        color
                     )
             }
 
@@ -124,16 +120,10 @@ class FocusActivity : AppCompatActivity() {
                     R.id.durationCustom
                 )
 
-            val customColor = if (selectedDurationMinutes !in durationButtons.keys) {
-                R.color.overseer_lime
-            } else {
-                android.R.color.darker_gray
-            }
+            val customColor = if (selectedDurationMinutes !in durationButtons.keys) WorkspaceUi.LIME else WorkspaceUi.SUBTLE
 
             customButton.backgroundTintList =
-                android.content.res.ColorStateList.valueOf(
-                    getColor(customColor)
-                )
+                android.content.res.ColorStateList.valueOf(customColor)
         }
 
         updateDurationButtonStyles()
@@ -177,7 +167,7 @@ class FocusActivity : AppCompatActivity() {
                 ).show()
 
             } else {
-                val input = android.widget.EditText(this).apply {
+                val input = WorkspaceUi.editText(this).apply {
                     inputType = android.text.InputType.TYPE_CLASS_NUMBER
                     hint = "Enter minutes"
                     setText(selectedDurationMinutes.toString())
@@ -319,9 +309,9 @@ class FocusActivity : AppCompatActivity() {
             findViewById<android.widget.TextView>(R.id.durationLabel).text = if (sessionMode == "focus") "FOCUS DURATION" else "BREAK DURATION"
             if (timer.status == "idle") findViewById<android.widget.TextView>(R.id.focusStatus).text = if (sessionMode == "focus") "Ready to focus" else "Ready for a break"
             mapOf(5 to R.id.duration5, 15 to R.id.duration15, 25 to R.id.duration25, 30 to R.id.duration30, 45 to R.id.duration45, 60 to R.id.duration60).forEach { (minutes, id) ->
-                findViewById<com.google.android.material.button.MaterialButton>(id).backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(if (minutes == selectedDurationMinutes) R.color.overseer_lime else android.R.color.darker_gray))
+                findViewById<com.google.android.material.button.MaterialButton>(id).backgroundTintList = android.content.res.ColorStateList.valueOf(if (minutes == selectedDurationMinutes) WorkspaceUi.LIME else WorkspaceUi.SUBTLE)
             }
-            findViewById<com.google.android.material.button.MaterialButton>(R.id.durationCustom).backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(if (selectedDurationMinutes !in listOf(5, 15, 25, 30, 45, 60)) R.color.overseer_lime else android.R.color.darker_gray))
+            findViewById<com.google.android.material.button.MaterialButton>(R.id.durationCustom).backgroundTintList = android.content.res.ColorStateList.valueOf(if (selectedDurationMinutes !in listOf(5, 15, 25, 30, 45, 60)) WorkspaceUi.LIME else WorkspaceUi.SUBTLE)
         }
     }
     private var timerReady = false
