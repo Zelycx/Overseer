@@ -2,6 +2,12 @@
 
 This is local development setup for the Web application. It does not deploy Firebase configuration or change Firebase Console resources.
 
+## Firebase CLI project directory
+
+The Firebase CLI project root is the repository root, where `firebase.json` points to the Firestore Rules at `web/firestore.rules` and configures the local emulators. The Web application remains independently managed under `web/`; its dependencies and development, build, typecheck, and test scripts stay in `web/package.json`.
+
+Run the Firebase emulator and Rules-test scripts from the repository root with `npm --prefix web run emulators` and `npm --prefix web run test:rules`. The scripts enter the repository root before invoking the Firebase CLI, use the `demo-overseer-web` project, and the Rules tests load `web/firestore.rules`.
+
 ## Environment configuration
 
 Create a local Vite environment file for the Web app (for example, `web/.env.local`) and obtain the Firebase Web app configuration from the existing Firebase project. Set these variables:
@@ -21,19 +27,33 @@ Project namespaces are intentionally separate:
 
 During local development, `VITE_USE_FIREBASE_EMULATORS` must be explicitly set to exactly `true` or `false` whenever Firebase configuration is present. Other spellings, whitespace, empty values, or missing values are configuration errors. `true` connects Auth at `127.0.0.1:9099` and Firestore at `127.0.0.1:8080`; the app reports the selected mode in the developer console. A production build rejects `true`; set `false` to use its configured Firebase project.
 
-When no Firebase configuration is supplied, the React application starts in its existing localStorage-only mode. For emulator development, keep the existing Web app API key, auth domain, and app ID settings, set `VITE_USE_FIREBASE_EMULATORS=true`, and the client will replace the project namespace with `demo-overseer-web`. For production, set the real Web app values, `VITE_FIREBASE_PROJECT_ID=overseer-f970c`, and `VITE_USE_FIREBASE_EMULATORS=false`.
+For emulator development, keep the existing Web app API key, auth domain, and app ID settings, set `VITE_USE_FIREBASE_EMULATORS=true`, and the client will replace the project namespace with `demo-overseer-web`. For production, set the real Web app values, `VITE_FIREBASE_PROJECT_ID=overseer-f970c`, and `VITE_USE_FIREBASE_EMULATORS=false`.
 
 Invalid or incomplete Firebase configuration is reported in the developer console, and Firebase-dependent code receives an actionable error. The app does not substitute a production project or claim remote work succeeded.
 
 ## Start the emulators
 
-From `web/`:
+From the repository root:
 
 ```sh
-npm run emulators
+npm --prefix web run emulators
 ```
 
-In another terminal, run `npm run dev` after setting the local variables above and choosing emulator mode. The emulator configuration binds to loopback addresses only. The Emulator UI is available at `http://127.0.0.1:4000`.
+In another terminal, run `npm --prefix web run dev` after setting the local variables above and choosing emulator mode. The Auth Emulator uses port `9099`, Firestore Emulator uses port `8080`, and Emulator UI uses port `4000`; the emulator configuration binds to loopback addresses only. The Emulator UI is available at `http://127.0.0.1:4000`.
+
+## Web authentication
+
+The Web app supports email/password account creation and sign-in, Google sign-in, and sign-out. Workspace routes wait for Firebase Auth initialization and redirect signed-out users to `/auth`; the landing page remains public. The Auth session does not migrate or synchronize local workspace data.
+
+Run Auth lifecycle tests with the local Auth Emulator:
+
+```sh
+npm --prefix web run test:auth
+```
+
+Google popup interaction is browser-based and is not exercised by the Node Auth Emulator tests. Verify it manually in the local Web app with emulator mode enabled. No Firebase Console provider settings are changed by these tests.
+
+When Firebase configuration is absent or invalid, Firebase Auth is unavailable and protected workspace routes lead to `/auth` with an initialization/configuration error. Existing localStorage data is not cleared or uploaded, but workspace access requires valid Firebase Auth configuration.
 
 ## Firestore rules
 
@@ -42,7 +62,7 @@ In another terminal, run `npm run dev` after setting the local variables above a
 Run the Rules tests with:
 
 ```sh
-npm run test:rules
+npm --prefix web run test:rules
 ```
 
 ## App Check
@@ -51,7 +71,7 @@ npm run test:rules
 
 ## Current scope
 
-When valid Firebase configuration is supplied, Firebase App, Auth, and Firestore are initialized by `src/firebase/client.ts`. Without it, the app remains in localStorage-only mode. This phase does not add sign-in screens, Firestore CRUD, local-data migration, AI Logic, App Check activation, Rules deployment, or Firebase Console changes. Existing routes and the `overseer.local-data` browser storage remain the application data source.
+When valid Firebase configuration is supplied, Firebase App, Auth, and Firestore are initialized by `src/firebase/client.ts`. This phase adds Web Auth session management and protected workspace routing only. Firestore Rules remain deny-all; there is no Firestore CRUD, profile/preferences bootstrap, local-data migration or synchronization, AI Logic, App Check activation, Rules deployment, or Firebase Console change. `overseer.local-data` remains device-local and its import/export, recovery, seed, and reset behavior is unchanged.
 
 Run the focused Firebase configuration tests with:
 

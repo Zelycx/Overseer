@@ -11,11 +11,15 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty",
-    "emulators": "firebase emulators:start --only auth,firestore --project demo-overseer-web",
-    "test:rules": "firebase emulators:exec --only auth,firestore --project demo-overseer-web \"node --test tests/firestore-rules.test.mjs\"",
-    "test:config": "node tests/firebase-config.test.mjs"
+    "emulators": "cd .. && firebase emulators:start --only auth,firestore --project demo-overseer-web",
+    "test:rules": "cd .. && firebase emulators:exec --only auth,firestore --project demo-overseer-web \"node --test web/tests/firestore-rules.test.mjs\"",
+    "test:config": "node tests/firebase-config.test.mjs",
+    "test:codecs": "node tests/firestore-codecs.test.mjs",
+    "test:timezone": "node tests/timezone-resolution.test.mjs",
+    "test:auth": "cd .. && firebase emulators:exec --only auth --project demo-overseer-web \"node --test web/tests/auth.test.mjs\""
   },
   "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
     "firebase": "^13.4.0",
     "lucide-react": "^1.73.0",
     "react": "^19.2.0",

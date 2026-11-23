@@ -1,7 +1,8 @@
-import { BookOpen, Menu, Sparkles, Wifi, WifiOff, X } from 'lucide-react'
+import { BookOpen, LogOut, Menu, Sparkles, Wifi, WifiOff, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { pageDetails } from '../../app/navigation'
+import { useAuth } from '../../app/AuthContext'
 import { useAppData } from '../../app/AppDataContext'
 
 type AppHeaderProps = {
@@ -27,6 +28,8 @@ function useOnlineStatus() {
 
 export default function AppHeader({ onMenuClick, menuOpen }: AppHeaderProps) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { signOut, actionInProgress } = useAuth()
   const { data } = useAppData()
   const online = useOnlineStatus()
   const detail = pageDetails[pathname] ?? (pathname.startsWith('/courses/')
@@ -34,6 +37,9 @@ export default function AppHeader({ onMenuClick, menuOpen }: AppHeaderProps) {
     : pathname.startsWith('/lessons/')
       ? { title: 'Lesson', eyebrow: 'Your study library' }
       : { title: 'Workspace', eyebrow: 'Overseer' })
+  const handleSignOut = async () => {
+    if (await signOut()) navigate('/', { replace: true })
+  }
 
   return (
     <header className="app-header">
@@ -64,6 +70,9 @@ export default function AppHeader({ onMenuClick, menuOpen }: AppHeaderProps) {
           <span className="profile-avatar">{(data.preferences.displayName || 'S').trim().slice(0, 2).toUpperCase()}</span>
           <span className="profile-name">{data.preferences.displayName || 'Student'}</span>
         </Link>
+        <button className="icon-button" type="button" onClick={() => void handleSignOut()} disabled={actionInProgress} aria-label="Sign out" title="Sign out">
+          <LogOut size={17} />
+        </button>
       </div>
     </header>
   )
