@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, test } from 'node:test'
 import { createServer } from 'vite'
 
+// this is a comment
+
 let vite
 let storageModule
 const values = new Map()
