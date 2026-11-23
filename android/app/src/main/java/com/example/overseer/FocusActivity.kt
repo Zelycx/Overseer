@@ -1,402 +1,150 @@
 package com.example.overseer
 
-import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import android.content.Intent
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import android.os.Bundle
 import android.os.CountDownTimer
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
+import android.widget.Button
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import com.example.overseer.data.firestore.ActiveFocusTimer
+import com.example.overseer.data.firestore.AuthenticatedFirestoreRepository
+import com.example.overseer.data.firestore.FocusMode
+import com.example.overseer.data.firestore.FocusSession
+import com.example.overseer.data.firestore.TimerStatus
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import java.util.UUID
 
 class FocusActivity : AppCompatActivity() {
-
-    private var focusTimer: CountDownTimer? = null
-    private var selectedDurationMinutes = DEFAULT_FOCUS_DURATION
-    private var timeLeftInMillis = selectedDurationMinutes * 60_000L
-    private var isRunning = false
-    private var endTimeInMillis = 0L
-    private val focusPrefs by lazy {
-        getSharedPreferences("overseer_focus", MODE_PRIVATE)
-    }
-    private val notificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                android.widget.Toast.makeText(
-                    this,
-                    "Notifications enabled!",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-
-    companion object {
-        private const val DEFAULT_FOCUS_DURATION = 25
-        private const val FOCUS_DURATION_KEY = "focus_duration"
-    }
+    private var listener: ListenerRegistration? = null
+    private var timer: CountDownTimer? = null
+    private var state: ActiveFocusTimer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        val auth = FirebaseAuth.getInstance()
+        if (auth.currentUser == null) { openAuth(); return }
         setContentView(R.layout.activity_focus)
 
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionLauncher.launch(
-                Manifest.permission.POST_NOTIFICATIONS
-            )
-        }
+        val display = findViewById<TextView>(R.id.focusTime)
+        val status = findViewById<TextView>(R.id.focusStatus)
+        val start = findViewById<Button>(R.id.focusStart)
+        val pause = findViewById<Button>(R.id.focusPause)
+        val reset = findViewById<Button>(R.id.focusReset)
+        val repository = AuthenticatedFirestoreRepository(FirebaseFirestore.getInstance())
 
-        restoreFocusState()
-
-        val startFocusButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton)
-
-        startFocusButton.setOnClickListener {
-            if (isRunning) {
-                // Pause the timer
-                focusTimer?.cancel()
-                FocusAlarmScheduler.cancel(this)
-                isRunning = false
-                endTimeInMillis = 0L
-                saveFocusState()
-                startFocusButton.text = "Resume"
-
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Session paused"
-            }
-
-            else {
-                // Start or resume the timer
-                startTimer()
-                startFocusButton.text = "Pause"
-
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Stay focused. You've got this!"
-            }
-
-        }
-
-        val durationButtons = mapOf(
-            5 to R.id.duration5,
-            15 to R.id.duration15,
-            25 to R.id.duration25,
-            30 to R.id.duration30,
-            45 to R.id.duration45,
-            60 to R.id.duration60
+        listener = repository.observeDocument(
+            "focusTimer",
+            "active",
+            decoder = { id, data -> com.example.overseer.data.firestore.CanonicalCodecs.decodeActiveFocusTimer(id, data) },
+            onValue = { model ->
+                state = model
+                render(display, status, model)
+            },
+            onError = { status.text = it.localizedMessage ?: "Unable to load timer" },
         )
 
-        fun updateDurationButtonStyles() {
-            durationButtons.forEach { (minutes, buttonId) ->
-
-                val button = findViewById<com.google.android.material.button.MaterialButton>(
-                    buttonId
-                )
-
-                val color = if (minutes == selectedDurationMinutes) {
-                    R.color.overseer_lime
-                } else {
-                    android.R.color.darker_gray
-                }
-
-                button.backgroundTintList =
-                    android.content.res.ColorStateList.valueOf(
-                        getColor(color)
-                    )
-            }
-
-            val customButton =
-                findViewById<com.google.android.material.button.MaterialButton>(
-                    R.id.durationCustom
-                )
-
-            val customColor = if (selectedDurationMinutes !in durationButtons.keys) {
-                R.color.overseer_lime
-            } else {
-                android.R.color.darker_gray
-            }
-
-            customButton.backgroundTintList =
-                android.content.res.ColorStateList.valueOf(
-                    getColor(customColor)
-                )
-        }
-
-        updateDurationButtonStyles()
-
-        durationButtons.forEach { (minutes, buttonId) ->
-            findViewById<com.google.android.material.button.MaterialButton>(buttonId)
-                .setOnClickListener {
-
-                    if (isRunning) {
-                        android.widget.Toast.makeText(
-                            this,
-                            "Pause your session before changing duration.",
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        selectedDurationMinutes = minutes
-                        updateDurationButtonStyles()
-                        timeLeftInMillis = minutes * 60_000L
-                        endTimeInMillis = 0L
-
-                        saveFocusState()
-
-                        findViewById<android.widget.TextView>(R.id.timerText).text =
-                            String.format("%02d:00", minutes)
-
-                        findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                            "Ready to focus"
-                    }
-                }
-        }
-
-        findViewById<com.google.android.material.button.MaterialButton>(
-            R.id.durationCustom
-        ).setOnClickListener {
-
-            if (isRunning) {
-                android.widget.Toast.makeText(
-                    this,
-                    "Pause your session before changing duration.",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-
-            } else {
-                val input = android.widget.EditText(this).apply {
-                    inputType = android.text.InputType.TYPE_CLASS_NUMBER
-                    hint = "Enter minutes"
-                    setText(selectedDurationMinutes.toString())
-                }
-
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Custom Focus Duration")
-                    .setMessage("Enter a duration between 1 and 180 minutes.")
-                    .setView(input)
-                    .setPositiveButton("Apply") { _, _ ->
-
-                        val minutes = input.text.toString().toIntOrNull()
-
-                        if (minutes == null || minutes !in 1..180) {
-                            android.widget.Toast.makeText(
-                                this,
-                                "Please enter a duration from 1 to 180 minutes.",
-                                android.widget.Toast.LENGTH_SHORT
-                            ).show()
-
-                        } else {
-                            selectedDurationMinutes = minutes
-                            updateDurationButtonStyles()
-                            timeLeftInMillis = minutes * 60_000L
-                            endTimeInMillis = 0L
-
-                            saveFocusState()
-
-                            findViewById<android.widget.TextView>(R.id.timerText).text =
-                                String.format("%02d:00", minutes)
-
-                            findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                                "Ready to focus"
-                        }
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
-            }
-        }
-
-        // ADD RESET CODE HERE
-        val resetFocusButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.resetFocusButton)
-
-        resetFocusButton.setOnClickListener {
-            focusTimer?.cancel()
-            FocusAlarmScheduler.cancel(this)
-            timeLeftInMillis = selectedDurationMinutes * 60_000L
-            isRunning = false
-            endTimeInMillis = 0L
-            saveFocusState()
-
-            findViewById<android.widget.TextView>(R.id.timerText).text =
-                String.format("%02d:00", selectedDurationMinutes)
-            findViewById<android.widget.TextView>(R.id.focusStatus).text = "Ready to focus"
-
-            startFocusButton.text = "Start Focus"
-        }
-
-        // BOTTOM NAVIGATION STARTS HERE
-
-        val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-
-            v.setPadding(
-                systemBars.left,
-                systemBars.top,
-                systemBars.right,
-                0
+        start.setOnClickListener {
+            val now = Timestamp.now()
+            val current = state ?: defaultTimer(now)
+            val duration = current.remainingSeconds.takeIf { it > 0 } ?: current.durationSeconds
+            val running = current.copy(
+                status = TimerStatus.RUNNING,
+                remainingSeconds = duration,
+                elapsedSeconds = if (current.status == TimerStatus.PAUSED) current.elapsedSeconds else 0,
+                startedAt = current.startedAt ?: now,
+                segmentStartedAt = now,
+                endsAt = Timestamp(now.seconds + duration, now.nanoseconds),
+                writeGeneration = current.writeGeneration + 1,
             )
-
-            bottomNavigation.setPadding(
-                0,
-                0,
-                0,
-                systemBars.bottom
-            )
-
-            insets
+            repository.saveActiveFocusTimer(running)
+            beginCountdown(running.remainingSeconds, display, status, repository)
         }
-
-        bottomNavigation.selectedItemId = R.id.nav_focus
-
-
-        bottomNavigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-
-                R.id.nav_home -> {
-                    val intent = Intent(this, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    }
-
-                    startActivity(intent)
-                    finish()
-                    true
-                }
-
-                R.id.nav_schedule -> {
-                    startActivity(Intent(this, ScheduleActivity::class.java))
-                    finish()
-                    true
-                }
-
-                R.id.nav_study -> {
-                    startActivity(Intent(this, StudyActivity::class.java))
-                    finish()
-                    true
-                }
-
-                R.id.nav_focus -> true
-
-                R.id.nav_profile -> {
-                    startActivity(Intent(this, ProfileActivity::class.java))
-                    finish()
-                    true
-                }
-
-                else -> false
-            }
+        pause.setOnClickListener {
+            val current = state ?: return@setOnClickListener
+            if (current.status != TimerStatus.RUNNING) return@setOnClickListener
+            timer?.cancel()
+            val remaining = display.text.toString().split(":").let { it[0].toIntOrNull()?.times(60)?.plus(it.getOrNull(1)?.toIntOrNull() ?: 0) ?: current.remainingSeconds }
+            repository.saveActiveFocusTimer(current.copy(status = TimerStatus.PAUSED, remainingSeconds = remaining, segmentStartedAt = null, endsAt = null, writeGeneration = current.writeGeneration + 1))
         }
-
-
+        reset.setOnClickListener {
+            timer?.cancel()
+            val current = state ?: defaultTimer(Timestamp.now())
+            repository.saveActiveFocusTimer(defaultTimer(Timestamp.now()).copy(mode = current.mode, courseId = current.courseId, taskId = current.taskId))
+        }
     }
 
-    private fun startTimer() {
-
-        endTimeInMillis = System.currentTimeMillis() + timeLeftInMillis
-        FocusAlarmScheduler.schedule(this, endTimeInMillis)
-
-        focusTimer = object : CountDownTimer(timeLeftInMillis, 1000) {
-
+    private fun beginCountdown(seconds: Int, display: TextView, status: TextView, repository: AuthenticatedFirestoreRepository) {
+        timer?.cancel()
+        timer = object : CountDownTimer(seconds * 1000L, 250L) {
             override fun onTick(millisUntilFinished: Long) {
-                timeLeftInMillis = millisUntilFinished
-                saveFocusState()
-
-                val minutes = (millisUntilFinished / 1000) / 60
-                val seconds = (millisUntilFinished / 1000) % 60
-
-                findViewById<android.widget.TextView>(R.id.timerText).text =
-                    String.format("%02d:%02d", minutes, seconds)
+                val remaining = ((millisUntilFinished + 999) / 1000).toInt()
+                val minutes = remaining / 60
+                val secs = remaining % 60
+                display.text = "%02d:%02d".format(minutes, secs)
             }
-
             override fun onFinish() {
-                timeLeftInMillis = 0
-                isRunning = false
-
-                endTimeInMillis = 0L
-                saveFocusState()
-
-                findViewById<android.widget.TextView>(R.id.timerText).text = "00:00"
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Focus session complete!"
-
-                findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text =
-                    "Start Again"
+                val current = state
+                if (current != null) {
+                    val ended = Timestamp.now()
+                    val session = FocusSession(
+                        id = "session-" + UUID.randomUUID(),
+                        createdAt = current.startedAt ?: ended,
+                        updatedAt = ended,
+                        mode = current.mode,
+                        startedAt = current.startedAt ?: ended,
+                        endedAt = ended,
+                        durationSeconds = current.durationSeconds,
+                        courseId = current.courseId,
+                        taskId = current.taskId,
+                        completed = true,
+                    )
+                    repository.createFocusSession(session)
+                    repository.saveActiveFocusTimer(defaultTimer(ended).copy(mode = current.mode, courseId = current.courseId, taskId = current.taskId))
+                }
+                status.text = "Session complete"
             }
         }.start()
-
-        isRunning = true
-        saveFocusState()
     }
 
-    private fun saveFocusState() {
-        focusPrefs.edit()
-            .putBoolean("is_running", isRunning)
-            .putLong("time_left", timeLeftInMillis)
-            .putLong("end_time", endTimeInMillis)
-            .putInt("focus_duration", selectedDurationMinutes)
-            .apply()
+    private fun render(display: TextView, status: TextView, model: ActiveFocusTimer) {
+        val remaining = model.remainingSeconds
+        display.text = "%02d:%02d".format(remaining / 60, remaining % 60)
+        status.text = if (model.status == TimerStatus.RUNNING) "Running" else if (model.status == TimerStatus.PAUSED) "Paused" else "Ready"
     }
 
-    private fun restoreFocusState() {
+    private fun defaultTimer(now: Timestamp) = ActiveFocusTimer(
+        id = "active",
+        createdAt = now,
+        updatedAt = now,
+        status = TimerStatus.IDLE,
+        mode = FocusMode.FOCUS,
+        durationSeconds = 25 * 60,
+        remainingSeconds = 25 * 60,
+        elapsedSeconds = 0,
+        generation = 1,
+        writeGeneration = 1,
+        startedAt = null,
+        segmentStartedAt = null,
+        endsAt = null,
+        courseId = null,
+        taskId = null,
+        runId = null,
+    )
 
-        selectedDurationMinutes = focusPrefs.getInt(
-            FOCUS_DURATION_KEY,
-            DEFAULT_FOCUS_DURATION
-        )
-
-        isRunning = focusPrefs.getBoolean("is_running", false)
-        timeLeftInMillis = focusPrefs.getLong(
-            "time_left",
-            selectedDurationMinutes * 60_000L
-        )
-        endTimeInMillis = focusPrefs.getLong("end_time", 0L)
-
-        if (isRunning) {
-            // Calculate the actual remaining time
-            timeLeftInMillis = endTimeInMillis - System.currentTimeMillis()
-
-            if (timeLeftInMillis <= 0L) {
-                timeLeftInMillis = 0L
-                isRunning = false
-                endTimeInMillis = 0L
-                saveFocusState()
-
-                findViewById<android.widget.TextView>(R.id.timerText).text = "00:00"
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Focus session complete!"
-
-                findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text =
-                    "Start Again"
-            } else {
-                findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text =
-                    "Pause"
-
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Stay focused. You've got this!"
-
-                startTimer()
-            }
-        } else {
-            val minutes = (timeLeftInMillis / 1000) / 60
-            val seconds = (timeLeftInMillis / 1000) % 60
-
-            findViewById<android.widget.TextView>(R.id.timerText).text =
-                String.format("%02d:%02d", minutes, seconds)
-
-            if (timeLeftInMillis < selectedDurationMinutes * 60_000L) {
-                findViewById<com.google.android.material.button.MaterialButton>(R.id.startFocusButton).text =
-                    "Resume"
-
-                findViewById<android.widget.TextView>(R.id.focusStatus).text =
-                    "Session paused"
-            }
-        }
+    override fun onDestroy() {
+        timer?.cancel()
+        listener?.remove()
+        listener = null
+        super.onDestroy()
     }
 
+    private fun openAuth() {
+        startActivity(Intent(this, AuthActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
+    }
 }

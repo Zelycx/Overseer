@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "format": "overseer-timezone-test-vectors",
+  "ianaTzdbRelease": "2026e",
+  "cases": [
+    {
+      "id": "normal-utc-conversion",
+      "operation": "localToUtc",
+      "input": { "date": "2025-01-01", "time": "12:34", "timeZoneId": "UTC" },
+      "expected": { "status": "resolved", "utcInstant": "2025-01-01T12:34:00Z", "disambiguation": null }
+    },
+    {
+      "id": "utc-instant-to-local-wall-clock",
+      "operation": "utcToLocal",
+      "input": { "utcInstant": "2025-11-02T06:30:00Z", "timeZoneId": "America/New_York" },
+      "expected": { "status": "resolved", "utcInstant": "2025-11-02T06:30:00Z", "date": "2025-11-02", "time": "01:30", "timeZoneId": "America/New_York" }
+    },
+    {
+      "id": "positive-offset-timezone",
+      "operation": "localToUtc",
+      "input": { "date": "2025-01-15", "time": "12:00", "timeZoneId": "Asia/Kathmandu" },
+      "expected": { "status": "resolved", "utcInstant": "2025-01-15T06:15:00Z", "disambiguation": null }
+    },
+    {
+      "id": "negative-offset-timezone",
+      "operation": "localToUtc",
+      "input": { "date": "2025-01-15", "time": "12:00", "timeZoneId": "America/Los_Angeles" },
+      "expected": { "status": "resolved", "utcInstant": "2025-01-15T20:00:00Z", "disambiguation": null }
+    },
+    {
+      "id": "spring-forward-gap-rejected",
+      "operation": "localToUtc",
+      "input": { "date": "2025-03-09", "time": "02:30", "timeZoneId": "America/New_York" },
+      "expected": { "status": "error", "code": "nonexistent_local_time" }
+    },
+    {
+      "id": "fall-back-overlap-requires-choice",
+      "operation": "localToUtc",
+      "input": { "date": "2025-11-02", "time": "01:30", "timeZoneId": "America/New_York" },
+      "expected": {
+        "status": "error",
+        "code": "ambiguous_local_time",
+        "choices": { "earlier": "2025-11-02T05:30:00Z", "later": "2025-11-02T06:30:00Z" }
+      }
+    },
+    {
+      "id": "fall-back-earlier-occurrence",
+      "operation": "localToUtc",
+      "input": { "date": "2025-11-02", "time": "01:30", "timeZoneId": "America/New_York", "disambiguation": "earlier" },
+      "expected": { "status": "resolved", "utcInstant": "2025-11-02T05:30:00Z", "disambiguation": "earlier" }
+    },
+    {
+      "id": "fall-back-later-occurrence",
+      "operation": "localToUtc",
+      "input": { "date": "2025-11-02", "time": "01:30", "timeZoneId": "America/New_York", "disambiguation": "later" },
+      "expected": { "status": "resolved", "utcInstant": "2025-11-02T06:30:00Z", "disambiguation": "later" }
+    },
+    {
+      "id": "unambiguous-time-null-metadata",
+      "operation": "localToUtc",
+      "input": { "date": "2025-11-02", "time": "03:30", "timeZoneId": "America/New_York" },
+      "expected": { "status": "resolved", "utcInstant": "2025-11-02T08:30:00Z", "disambiguation": null }
+    },
+    {
+      "id": "event-endpoints-resolve-independently",
+      "operation": "eventEndpoints",
+      "input": {
+        "timeZoneId": "America/New_York",
+        "start": { "date": "2025-11-02", "time": "01:30", "disambiguation": "later" },
+        "end": { "date": "2025-11-02", "time": "02:30" }
+      },
+      "expected": {
+        "status": "resolved",
+        "startAt": "2025-11-02T06:30:00Z",
+        "endAt": "2025-11-02T07:30:00Z",
+        "startTimeDisambiguation": "later",
+        "endTimeDisambiguation": null
+      }
+    },
+    {
+      "id": "cross-midnight-event",
+      "operation": "eventEndpoints",
+      "input": {
+        "timeZoneId": "Asia/Tokyo",
+        "start": { "date": "2025-06-01", "time": "23:30" },
+        "end": { "date": "2025-06-02", "time": "00:15" }
+      },
+      "expected": {
+        "status": "resolved",
+        "startAt": "2025-06-01T14:30:00Z",
+        "endAt": "2025-06-01T15:15:00Z",
+        "startTimeDisambiguation": null,
+        "endTimeDisambiguation": null
+      }
+    },
+    {
+      "id": "event-end-equal-to-start-invalid",
+      "operation": "eventEndpoints",
+      "input": {
+        "timeZoneId": "America/New_York",
+        "start": { "date": "2025-01-15", "time": "10:00" },
+        "end": { "date": "2025-01-15", "time": "10:00" }
+      },
+      "expected": { "status": "error", "code": "event_end_not_after_start" }
+    },
+    {
+      "id": "event-end-before-start-invalid",
+      "operation": "eventEndpoints",
+      "input": {
+        "timeZoneId": "America/New_York",
+        "start": { "date": "2025-01-15", "time": "11:00" },
+        "end": { "date": "2025-01-15", "time": "10:00" }
+      },
+      "expected": { "status": "error", "code": "event_end_not_after_start" }
+    },
+    {
+      "id": "invalid-iana-timezone",
+      "operation": "localToUtc",
+      "input": { "date": "2025-01-01", "time": "12:00", "timeZoneId": "Mars/Olympus_Mons" },
+      "expected": { "status": "error", "code": "invalid_time_zone" }
+    },
+    {
+      "id": "invalid-calendar-date",
+      "operation": "localToUtc",
+      "input": { "date": "2025-02-30", "time": "12:00", "timeZoneId": "UTC" },
+      "expected": { "status": "error", "code": "invalid_date" }
+    },
+    {
+      "id": "invalid-wall-clock-time",
+      "operation": "localToUtc",
+      "input": { "date": "2025-01-01", "time": "24:00", "timeZoneId": "UTC" },
+      "expected": { "status": "error", "code": "invalid_time" }
+    },
+    {
+      "id": "device-timezone-does-not-change-explicit-zone-result",
+      "operation": "deviceTimezoneIndependence",
+      "input": {
+        "date": "2025-06-01",
+        "time": "09:00",
+        "timeZoneId": "America/New_York",
+        "deviceTimeZones": ["Pacific/Kiritimati", "America/Adak"]
+      },
+      "expected": { "status": "resolved", "utcInstant": "2025-06-01T13:00:00Z", "disambiguation": null }
+    },
+    {
+      "id": "explicit-timezone-change-preserves-wall-clock",
+      "operation": "eventTimezoneChange",
+      "input": {
+        "previous": {
+          "timeZoneId": "Asia/Tokyo",
+          "startTimeDisambiguation": "earlier",
+          "endTimeDisambiguation": "later"
+        },
+        "new": {
+          "timeZoneId": "America/Los_Angeles",
+          "start": { "date": "2025-06-01", "time": "09:00" },
+          "end": { "date": "2025-06-01", "time": "10:00" }
+        }
+      },
+      "expected": {
+        "status": "resolved",
+        "preservedStart": { "date": "2025-06-01", "time": "09:00" },
+        "preservedEnd": { "date": "2025-06-01", "time": "10:00" },
+        "timeZoneId": "America/Los_Angeles",
+        "startAt": "2025-06-01T16:00:00Z",
+        "endAt": "2025-06-01T17:00:00Z",
+        "startTimeDisambiguation": null,
+        "endTimeDisambiguation": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "overseer-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty",
+    "emulators": "cd .. && firebase emulators:start --only auth,firestore --project demo-overseer-web",
+    "test:rules": "cd .. && firebase emulators:exec --only auth,firestore --project demo-overseer-web \"node --test web/tests/firestore-rules.test.mjs\"",
+    "test:config": "node tests/firebase-config.test.mjs",
+    "test:codecs": "node tests/firestore-codecs.test.mjs",
+    "test:timezone": "node tests/timezone-resolution.test.mjs",
+    "test:app-data": "node tests/app-data-storage.test.mjs",
+    "test:auth": "cd .. && firebase emulators:exec --only auth --project demo-overseer-web \"node --test web/tests/auth.test.mjs\""
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
+    "firebase": "^13.4.0",
+    "lucide-react": "^1.73.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.18.5"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "firebase-tools": "^15.37.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.8"
+  }
+}
