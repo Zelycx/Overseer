@@ -70,7 +70,14 @@ export function CourseProgressChart({ data }: { data: CourseChartPoint[] }) {
         <CartesianGrid stroke="var(--chart-grid)" horizontal={false} />
         <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} tickFormatter={(value: number) => `${value}%`} />
         <YAxis type="category" dataKey="name" width={106} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-secondary)', fontSize: 10 }} />
-        <Tooltip contentStyle={tooltipStyle} formatter={(value: unknown, _name: unknown, item: { payload: { completed: number; total: number } }) => [`${value}% (${item.payload.completed}/${item.payload.total} lessons)`, 'Progress']} />
+        <Tooltip contentStyle={tooltipStyle} formatter={(value, _name, item) => {
+          const payload = item.payload as Partial<CourseChartPoint> | undefined
+          const progress = typeof value === 'number' ? value : Number(value)
+          const detail = typeof payload?.completed === 'number' && typeof payload.total === 'number'
+            ? ` (${payload.completed}/${payload.total} lessons)`
+            : ''
+          return [`${progress}%${detail}`, 'Progress']
+        }} />
         <Bar dataKey="percentage" name="Progress" fill="var(--chart-primary)" radius={[0, 5, 5, 0]} maxBarSize={26} isAnimationActive={animate} animationDuration={620} />
       </BarChart>
     </ResponsiveContainer></div> : <ChartEmpty>Create a course to see lesson progress here.</ChartEmpty>}

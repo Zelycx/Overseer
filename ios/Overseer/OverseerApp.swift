@@ -1,8 +1,15 @@
 import SwiftUI
+import FirebaseCore
 
 @main
 struct OverseerApp: App {
     @StateObject private var store = AppStore()
+
+    init() {
+        guard FirebaseApp.app() == nil,
+              Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist") != nil else { return }
+        FirebaseApp.configure()
+    }
 
     var body: some Scene {
         WindowGroup {
