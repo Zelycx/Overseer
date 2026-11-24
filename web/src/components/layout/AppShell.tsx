@@ -55,7 +55,7 @@ export default function AppShell() {
       {menuOpen && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
       <AppSidebar open={menuOpen} collapsed={collapsed} onNavigate={() => setMenuOpen(false)} onToggleCollapsed={() => update({ preferences: { ...data.preferences, sidebarCollapsed: !collapsed } })} />
       <div className="app-main" aria-hidden={menuOpen || undefined}>
-        <AppHeader onMenuClick={() => setMenuOpen((open) => !open)} onCommandClick={() => setCommandOpen(true)} menuOpen={menuOpen} />
+        <AppHeader onMenuClick={() => setMenuOpen((open) => !open)} menuOpen={menuOpen} />
         {storageError && <div className="storage-error-banner" role="alert">{storageError}</div>}
         <main className="page-content" id="main-content">
           <Suspense fallback={<div className="page-loading" role="status">Loading page…</div>}>
