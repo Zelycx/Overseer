@@ -77,6 +77,45 @@ class FocusActivity : AppCompatActivity() {
             val current = state ?: defaultTimer(Timestamp.now())
             repository.saveActiveFocusTimer(defaultTimer(Timestamp.now()).copy(mode = current.mode, courseId = current.courseId, taskId = current.taskId))
         }
+
+        val bottomNavigation = findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(
+            R.id.focusBottomNavigation
+        )
+
+        bottomNavigation.selectedItemId = R.id.nav_focus
+
+        bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                    true
+                }
+
+                R.id.nav_schedule -> {
+                    startActivity(Intent(this, ScheduleActivity::class.java))
+                    finish()
+                    true
+                }
+
+                R.id.nav_study -> {
+                    startActivity(Intent(this, CoursesActivity::class.java))
+                    finish()
+                    true
+                }
+
+                R.id.nav_focus -> true
+
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                    finish()
+                    true
+                }
+
+                else -> false
+            }
+        }
+
     }
 
     private fun beginCountdown(seconds: Int, display: TextView, status: TextView, repository: AuthenticatedFirestoreRepository) {

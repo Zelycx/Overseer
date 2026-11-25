@@ -70,11 +70,11 @@ class ScheduleActivity : AppCompatActivity() {
             renderEvents(firestoreEvents, noClassesMessage, calendar)
         }
 
-        findViewById<Button>(R.id.previousDayButton).setOnClickListener {
+        findViewById<ImageButton>(R.id.previousDayButton).setOnClickListener {
             calendar.add(Calendar.DAY_OF_MONTH, -1)
             updateDate()
         }
-        findViewById<Button>(R.id.nextDayButton).setOnClickListener {
+        findViewById<ImageButton>(R.id.nextDayButton).setOnClickListener {
             calendar.add(Calendar.DAY_OF_MONTH, 1)
             updateDate()
         }
