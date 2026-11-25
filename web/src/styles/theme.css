@@ -188,7 +188,14 @@ body { font-family: var(--font-sans); font-size: var(--text-base); line-height: 
 .dashboard-footer-callout > a { color: var(--text-primary); background: var(--surface); }
 
 /* Planner, schedule, tasks, library, progress, settings */
-.storage-error-banner { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 25%, var(--border)); background: var(--danger-surface); font-size: 13px; }
+.storage-error-banner {
+    padding: 11px 20px;
+    color: var(--danger);
+    border-bottom: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border));
+    background: var(--danger-surface);
+    font-size: 11px;
+    line-height: 1.5;
+}
 .editor-form { gap: 16px; }
 .form-grid { gap: 15px; }
 .form-field { gap: 7px; color: var(--text-secondary); font-size: 13px; font-weight: var(--weight-medium); }
@@ -660,7 +667,7 @@ body { color: var(--text-primary); background: var(--background); font-family: R
 .nav-link { min-height: 46px; padding: 0 12px; border-radius: 12px; font-size: 14px; }
 .nav-link--active, .nav-link--active:hover { background: rgb(255 255 255 / 12%); }
 .nav-link--active::before { left: -16px; width: 4px; height: 24px; }
-.app-header { min-height: 72px; padding-inline: clamp(20px, 3vw, 42px); border-color: var(--border); background: rgb(253 248 255 / 96%); }
+.app-header { min-height: 72px; padding-inline: clamp(20px, 3vw, 42px); border-color: var(--border); background: color-mix(in srgb, var(--background) 96%, transparent); }
 .app-header h1 { font-size: 18px; font-weight: 700; letter-spacing: -.025em; }
 .header-eyebrow, .connection-status, .ai-status { color: var(--text-secondary); font-size: 12px; }
 .page-content { width: min(100%, 1500px); padding: 34px clamp(20px, 3vw, 42px) 48px; }
@@ -674,8 +681,8 @@ body { color: var(--text-primary); background: var(--background); font-family: R
 .button { min-height: 44px; border-radius: 12px; font-size: 14px; font-weight: 650; }
 .button--small { min-height: 38px; border-radius: 10px; font-size: 13px; }
 .button--primary { color: #fdf8ff; border-color: var(--navy); background: var(--navy); }
-.button--secondary, .button--outline { color: var(--navy); border-color: var(--border); background: var(--surface); }
-.button--lime { color: var(--navy); border-color: var(--accent-color); background: var(--accent-color); }
+.button--secondary, .button--outline { color: var(--text-primary); border-color: var(--border); background: var(--surface); }
+.button--lime { color: var(--accent-foreground); border-color: var(--accent-color); background: var(--accent-color); }
 .button--secondary:hover, .button--outline:hover { border-color: var(--navy); background: var(--subtle-surface); }
 .badge { border-radius: 8px; font-size: 10px; }
 .badge--neutral, .badge--soft { color: var(--text-secondary); background: var(--subtle-surface); }
@@ -701,9 +708,9 @@ body { color: var(--text-primary); background: var(--background); font-family: R
 .planner-time, .planner-row__copy small, .managed-task__meta, .material-preview,
 .lesson-row__copy > small, .history-row small, .activity-row small { color: var(--text-secondary); font-size: 11px; }
 .agenda-marker--lime, .schedule-color-dot--lime, .activity-dot { background: var(--accent-color); }
-.agenda-add, .task-add { min-height: 44px; color: var(--navy); font-size: 12px; }
+.agenda-add, .task-add { min-height: 44px; color: var(--text-secondary); font-size: 12px; }
 .course-card { border-radius: 16px; }
-.course-icon--lavender, .course-icon--mint, .course-icon--sand { color: var(--navy); background: var(--accent-soft); }
+.course-icon--lavender, .course-icon--mint, .course-icon--sand { color: var(--accent-foreground); background: var(--accent-soft); }
 .dashboard-footer-callout { border-color: var(--border); border-radius: 14px; background: var(--subtle-surface); }
 .dashboard-footer-callout strong, .dashboard-footer-callout span { color: var(--text-primary); font-size: 12px; }
 .form-field { color: var(--text-secondary); font-size: 13px; }
@@ -715,12 +722,12 @@ body { color: var(--text-primary); background: var(--background); font-family: R
 .filter-row select:focus, .search-field:focus-within, .date-input-label input:focus,
 .schedule-day-picker input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgb(193 255 0 / 24%); }
 .filter-chip, .week-day { color: var(--text-secondary); border-color: var(--border); border-radius: 10px; background: var(--surface); font-size: 12px; }
-.filter-chip--active, .week-day--active { color: var(--navy); border-color: var(--accent-color); background: var(--accent-soft); }
-.week-day--today strong { color: var(--navy); background: var(--accent-soft); }
-.managed-task__main > p, .schedule-event-copy p, .schedule-event-copy small,
+.filter-chip--active, .week-day--active { color: var(--accent-foreground); border-color: var(--accent-color); background: var(--accent-soft);
+.week-day--today strong { color: var(--accent-foreground); background: var(--accent-soft); }
+  .managed-task__main > p, .schedule-event-copy p, .schedule-event-copy small,
 .course-detail-card > p, .lesson-description, .assistant-notice > p:not(.eyebrow) { color: var(--text-secondary); font-size: 12px; }
 .planner-task-indicator { background: var(--accent-color); }
-.material-file-icon, .history-icon, .assistant-icon, .auth-icon { color: var(--navy); background: var(--accent-soft); }
+.material-file-icon, .history-icon, .assistant-icon, .auth-icon { color: var(--accent-foreground); background: var(--accent-soft); }
 .import-dropzone { border-color: var(--border); background: var(--subtle-surface); }
 .timer-card { background: radial-gradient(circle at 50% 45%, var(--surface) 0, var(--surface) 48%, var(--subtle-surface) 100%); }
 .timer-ring { border-color: var(--border); border-left-color: var(--accent-color); border-top-color: var(--accent-soft); }
@@ -738,4 +745,5 @@ body { color: var(--text-primary); background: var(--background); font-family: R
   .sidebar { width: min(300px, calc(100vw - 52px)); }
   .app-main { margin-left: 0; }
   .page-content { padding: 26px 18px 38px; }
+}
 }

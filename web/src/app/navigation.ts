@@ -44,6 +44,6 @@ export const pageDetails: Record<string, { title: string; eyebrow: string }> = {
   '/library/import': { title: 'Import material', eyebrow: 'Bring your notes into Overseer' },
   '/assistant': { title: 'Study assistant', eyebrow: 'Learn with your course context' },
   '/focus': { title: 'Focus', eyebrow: 'One session at a time' },
-  '/progress': { title: 'Learning progress', eyebrow: 'See how your work adds up' },
-  '/settings': { title: 'Profile & settings', eyebrow: 'Make Overseer yours' },
+  '/progress': { title: 'Progress', eyebrow: 'See how your work adds up' },
+  '/settings': { title: 'Settings', eyebrow: 'Make Overseer yours' },
 }
