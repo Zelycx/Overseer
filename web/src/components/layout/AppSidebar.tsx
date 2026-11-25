@@ -46,12 +46,6 @@ export default function AppSidebar({ open, collapsed, onNavigate, onToggleCollap
       </button>
       </div>
 
-      <div className="workspace-switcher">
-        <span className="workspace-switcher__avatar"><GraduationCap size={17} aria-hidden="true" /></span>
-        <span className="workspace-switcher__copy"><strong>{data.preferences.displayName || 'My workspace'}</strong><small>Local workspace</small></span>
-        <span className="workspace-switcher__dots" aria-hidden="true">···</span>
-      </div>
-
       <NavigationGroup title="Workspace" items={primaryNavigation} onNavigate={onNavigate} collapsed={collapsed} />
       <NavigationGroup title="Study tools" items={workspaceNavigation} onNavigate={onNavigate} collapsed={collapsed} />
       <div className="sidebar-bottom" />

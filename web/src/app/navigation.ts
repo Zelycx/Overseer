@@ -32,7 +32,7 @@ export const workspaceNavigation: NavigationItem[] = [
 ]
 
 export const settingsNavigation: NavigationItem[] = [
-  { label: 'Profile & settings', to: '/settings', icon: Settings },
+  { label: 'Settings', to: '/settings', icon: Settings },
 ]
 
 export const pageDetails: Record<string, { title: string; eyebrow: string }> = {

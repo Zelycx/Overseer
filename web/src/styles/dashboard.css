@@ -1,3 +1,4 @@
+
 .dashboard-page { display: grid; gap: 28px; }
 .dashboard-welcome-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .dashboard-date { margin: 0 0 8px; color: #727b94; font-size: 10px; font-weight: 580; }
@@ -5,9 +6,38 @@
 .greeting-star { display: inline-block; color: #a6cf11; font-size: 19px; transform: translateY(-2px); }
 .dashboard-subtitle { margin: 7px 0 0; color: #78809a; font-size: 11px; }
 .dashboard-welcome-row > .button { margin-bottom: 2px; }
+
 .dashboard-grid { display: grid; gap: 15px; }
-.dashboard-grid--top { grid-template-columns: minmax(0, 1.6fr) minmax(245px, .8fr); }
+
+.dashboard-grid--top {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 15px;
+}
+
+.dashboard-grid--top > * {
+  min-width: 0;
+  width: 100%;
+}
+
+.dashboard-grid--top > .dashboard-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dashboard-grid--top > .dashboard-section > .agenda-card {
+  flex: 1;
+  width: 100%;
+}
+
+.dashboard-grid--top > .focus-summary-card {
+  height: 100%;
+  min-height: 0;
+}
+
 .dashboard-grid--middle { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+
 .day-plan-card { display: flex; flex-direction: column; justify-content: space-between; min-height: 215px; overflow: hidden; color: #fff; border: 0; background: var(--navy); box-shadow: 0 8px 23px rgb(19 29 68 / 12%); }
 .day-plan-card__top { position: relative; display: flex; justify-content: space-between; min-height: 126px; }
 .eyebrow--light { color: #aeb9d3; }
@@ -27,6 +57,7 @@
 .plan-metric strong { font-size: 10px; font-weight: 650; }
 .plan-metric small { color: #aab4cf; font-size: 8px; }
 .day-plan-card__bottom > .button { margin-left: auto; }
+
 .focus-summary-card { display: flex; flex-direction: column; min-height: 215px; }
 .card-top-line { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
 .stat-icon { display: grid; place-items: center; width: 30px; height: 30px; color: var(--navy); border-radius: 9px; }
@@ -42,8 +73,10 @@
 .week-bar { display: block; width: min(16px, 68%); min-height: 5px; border-radius: 4px 4px 2px 2px; background: #e4e5ec; }
 .week-bar--today { background: var(--lime); }
 .week-bar-column small { color: #939bad; font-size: 7px; }
+
 .dashboard-section { min-width: 0; }
 .dashboard-section > .section-heading { margin-bottom: 12px; }
+
 .agenda-card, .tasks-card { padding-top: 3px; padding-bottom: 3px; }
 .agenda-row { display: flex; align-items: center; gap: 12px; min-height: 62px; border-bottom: 1px solid #f0eef3; }
 .agenda-row:last-of-type { border-bottom: 0; }
@@ -60,6 +93,7 @@
 .agenda-row > .badge { margin-left: auto; font-size: 7px; }
 .agenda-add, .task-add { display: flex; align-items: center; gap: 7px; min-height: 39px; color: #727d99; font-size: 9px; font-weight: 600; }
 .agenda-add:hover, .task-add:hover { color: var(--navy); }
+
 .task-row { display: flex; align-items: center; gap: 10px; min-height: 62px; border-bottom: 1px solid #f0eef3; }
 .task-check { display: block; width: 17px; height: 17px; flex: 0 0 auto; border: 1px solid #d9dce5; border-radius: 5px; background: white; }
 .task-info { display: grid; gap: 4px; min-width: 0; }
@@ -70,6 +104,7 @@
 .priority-dot--high { background: #e08b72; }
 .priority-dot--medium { background: #dfb855; }
 .priority-dot--low { background: #7cb99b; }
+
 .course-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .course-card { box-shadow: 0 1px 2px rgb(19 29 68 / 2%); }
 .course-card__top { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
@@ -86,6 +121,7 @@
 .course-progress .progress-bar-wrap { flex: 1; }
 .course-progress .progress-bar { height: 5px; }
 .course-progress > span { color: #59627d; font-size: 8px; font-weight: 650; }
+
 .dashboard-footer-callout { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid #e8e7e6; border-radius: 13px; background: #f6f6ec; }
 .callout-icon { display: grid; place-items: center; width: 31px; height: 31px; flex: 0 0 auto; color: #677524; border-radius: 9px; background: #eaf2ce; }
 .dashboard-footer-callout > div:nth-child(2) { display: grid; gap: 4px; }
@@ -95,7 +131,10 @@
 .dashboard-footer-callout > a:hover { color: var(--navy); }
 
 @media (max-width: 1120px) {
-  .dashboard-grid--top { grid-template-columns: minmax(0, 1.4fr) minmax(220px, .8fr); }
+  .dashboard-grid--top {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dashboard-grid--middle { gap: 14px; }
   .agenda-row, .task-row { gap: 9px; }
   .agenda-time { flex-basis: 60px; }
@@ -103,7 +142,7 @@
 }
 
 @media (max-width: 900px) {
-  .dashboard-grid--top { grid-template-columns: 1fr; }
+  .dashboard-grid--top { grid-template-columns: minmax(0, 1fr); }
   .focus-summary-card { min-height: 190px; }
   .week-bars { max-width: 350px; height: 38px; }
 }
