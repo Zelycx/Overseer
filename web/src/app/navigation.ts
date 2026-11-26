@@ -2,8 +2,8 @@ import {
   BookOpen,
   CalendarDays,
   ChartNoAxesCombined,
-  CircleHelp,
   Focus,
+  Sparkles,
   LayoutDashboard,
   ListTodo,
   NotebookPen,
@@ -18,21 +18,23 @@ export type NavigationItem = {
 }
 
 export const primaryNavigation: NavigationItem[] = [
-  { label: 'Home', to: '/dashboard', icon: LayoutDashboard },
-  { label: 'Schedule', to: '/schedule', icon: CalendarDays },
-  { label: 'Study', to: '/library', icon: BookOpen },
-  { label: 'Focus', to: '/focus', icon: Focus },
-  { label: 'Progress', to: '/progress', icon: ChartNoAxesCombined },
+{ label: 'Study', to: '/library', icon: BookOpen },
+{ label: 'Study assistant', to: '/assistant', icon: Sparkles},
+  
+  
+  
 ]
 
 export const workspaceNavigation: NavigationItem[] = [
   { label: 'Day planner', to: '/day-planner', icon: NotebookPen },
+{ label: 'Schedule', to: '/schedule', icon: CalendarDays },
   { label: 'Tasks', to: '/tasks', icon: ListTodo },
-  { label: 'Study assistant', to: '/assistant', icon: CircleHelp },
+  
 ]
 
 export const settingsNavigation: NavigationItem[] = [
-  { label: 'Settings', to: '/settings', icon: Settings },
+{ label: 'Focus', to: '/focus', icon: Focus },
+  { label: 'Progress', to: '/progress', icon: ChartNoAxesCombined },
 ]
 
 export const pageDetails: Record<string, { title: string; eyebrow: string }> = {

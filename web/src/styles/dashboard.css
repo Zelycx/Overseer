@@ -68,9 +68,37 @@
 .focus-value > span:first-child { align-self: flex-end; padding-bottom: 5px; color: #778099; font-size: 12px; font-weight: 520; letter-spacing: 0; }
 .focus-change { display: inline-flex; align-items: center; gap: 2px; padding: 4px 6px; margin-bottom: 5px; color: #55713b; border-radius: 5px; background: #f0f7e3; font-size: 8px; font-weight: 680; letter-spacing: 0; }
 .muted-copy { margin: 0; color: #81899e; font-size: 9px; }
-.week-bars { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 48px; margin-top: auto; padding-top: 9px; }
-.week-bar-column { display: grid; justify-items: center; align-content: end; gap: 4px; width: 100%; height: 100%; }
-.week-bar { display: block; width: min(16px, 68%); min-height: 5px; border-radius: 4px 4px 2px 2px; background: #e4e5ec; }
+.week-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  margin-top: auto;
+  padding-top: 9px;
+  box-sizing: border-box;
+}
+
+.week-bar-column {
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+}
+
+.week-bar {
+  display: block;
+  width: 68%;
+  max-width: 16px;
+  min-height: 5px;
+  border-radius: 4px 4px 2px 2px;
+  background: #e4e5ec;
+}
 .week-bar--today { background: var(--lime); }
 .week-bar-column small { color: #939bad; font-size: 7px; }
 
@@ -122,8 +150,26 @@
 .course-progress .progress-bar { height: 5px; }
 .course-progress > span { color: #59627d; font-size: 8px; font-weight: 650; }
 
-.dashboard-footer-callout { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid #e8e7e6; border-radius: 13px; background: #f6f6ec; }
-.callout-icon { display: grid; place-items: center; width: 31px; height: 31px; flex: 0 0 auto; color: #677524; border-radius: 9px; background: #eaf2ce; }
+.dashboard-footer-callout {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  border: none;
+  background: transparent;
+}
+
+.dashboard-footer-callout .callout-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+
+}.callout-icon { display: grid; place-items: center; width: 31px; height: 31px; flex: 0 0 auto; color: #677524; border-radius: 9px; background: #eaf2ce; }
 .dashboard-footer-callout > div:nth-child(2) { display: grid; gap: 4px; }
 .dashboard-footer-callout strong { color: #333e59; font-size: 9px; }
 .dashboard-footer-callout span { color: #7b8393; font-size: 8px; }
@@ -144,7 +190,11 @@
 @media (max-width: 900px) {
   .dashboard-grid--top { grid-template-columns: minmax(0, 1fr); }
   .focus-summary-card { min-height: 190px; }
-  .week-bars { max-width: 350px; height: 38px; }
+.week-bars {
+  width: 100%;
+  max-width: none;
+  height: 38px;
+}
 }
 
 @media (max-width: 680px) {
@@ -176,4 +226,61 @@
   .section-heading p { font-size: 9px; }
   .section-heading__action .text-link { font-size: 8px; }
   .agenda-row > .badge { display: none; }
+}
+
+.focus-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.focus-value-main {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.focus-secondary {
+  flex-shrink: 0;
+  text-align: right;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.dashboard-footer-callout {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-footer-callout::before,
+.dashboard-footer-callout::after {
+  display: none !important;
+  content: none !important;
+}
+
+.empty-tasks-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+.empty-tasks-content .empty-copy {
+  flex: 1;
+}
+
+.empty-tasks-content .callout-icon {
+  margin-left: auto;
+  flex-shrink: 0;
 }

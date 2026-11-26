@@ -78,9 +78,9 @@ export default function DashboardPage() {
                 {upcoming[0]?.id === event.id && <Badge tone="soft">UP NEXT</Badge>}
               </div>
             )) : <p className="empty-copy">Nothing scheduled today. Add an event when you’re ready.</p>}
-            <Link to="/schedule?new=1" className="agenda-add"><Plus size={15} /> Add schedule event</Link>
           </Card>
         </section>
+
 
         <section className="dashboard-section">
           <SectionHeading title="Your priorities" detail={`${pending.length} pending · ${completed.length} completed`} action={<Link className="text-link" to="/tasks">View Tasks <ArrowRight size={14} /></Link>} />
@@ -92,9 +92,20 @@ export default function DashboardPage() {
                 <div className="task-meta"><span className={`priority-dot priority-dot--${task.priority.toLowerCase()}`} /><span>{task.dueDate ? formatDate(task.dueDate, { month: 'short', day: 'numeric' }) : 'No due date'}</span></div>
               </div>
             ))}
-            {pending.length === 0 && <p className="empty-copy">You’re all caught up. Add a task when the next one comes along.</p>}
-            <Link to="/tasks?new=1" className="task-add"><Plus size={15} /> Create a task</Link>
-          </Card>
+{pending.length === 0 && (
+  <div className="empty-tasks-content">
+    <p className="empty-copy">
+      You’re all caught up. Add a task when the next one comes along.
+    </p>
+    <Link
+      to="/assistant"
+      className="callout-icon"
+      aria-label="Open study assistant"
+    >
+      <Sparkles size={24} />
+    </Link>
+  </div>
+)}          </Card>
         </section>
       </div>
       <div className="dashboard-grid dashboard-grid--top">
@@ -106,9 +117,18 @@ export default function DashboardPage() {
             <Link to="/focus" className="icon-ornament" aria-label="Focus history"><MoreHorizontal size={19} /></Link>
           </div>
           <span className="eyebrow">FOCUS THIS WEEK</span>
-          <div className="focus-value">{durationLabel(weekly.reduce((sum, day) => sum + day.seconds, 0))}<span className="focus-change"><Clock3 size={13} /> {data.focusSessions.length} sessions</span></div>
-          <p className="muted-copy">{durationLabel(todayFocusSeconds)} today · {durationLabel(totalFocusSeconds)} total</p>
-          <div className="week-bars" aria-label="Weekly focus time chart">
+         <div className="focus-value">
+  <div className="focus-value-main">
+    {durationLabel(weekly.reduce((sum, day) => sum + day.seconds, 0))}
+    <span className="focus-change">
+      <Clock3 size={13} /> {data.focusSessions.length} sessions
+    </span>
+  </div>
+
+  <span className="muted-copy focus-secondary">
+    {durationLabel(todayFocusSeconds)} today · {durationLabel(totalFocusSeconds)} total
+  </span>
+</div><div className="week-bars" aria-label="Weekly focus time chart">
             {weekly.map((day, index) => (
               <div className="week-bar-column" key={`${day.label}-${index}`} title={`${day.label}: ${durationLabel(day.seconds)}`}>
                 <span className={`week-bar${localDateKey(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + index)) === today ? ' week-bar--today' : ''}`} style={{ height: `${Math.max(day.seconds ? 10 : 5, day.seconds / maxFocus * 100)}%` }} />
@@ -151,6 +171,7 @@ export default function DashboardPage() {
                 <span className="course-code">{course.code || 'COURSE'}</span>
                 <span className="icon-ornament course-menu" aria-hidden="true"><MoreHorizontal size={18} /></span>
               </div>
+              
               <Link className="course-card__title" to={`/courses/${course.id}`}>{course.name}</Link>
               <p>{course.lessonsComplete} of {course.lessonsTotal} lessons completed</p>
               <div className="course-progress">
@@ -160,6 +181,7 @@ export default function DashboardPage() {
             </Card>
           ))}
         </div>
+        
         {courses.length === 0 && <Card padding="medium"><p className="empty-copy">Create your first course in the study library.</p></Card>}
       </section>
 
@@ -188,6 +210,7 @@ export default function DashboardPage() {
             <Link to="/library/import"><BookOpen size={16} /> Add study material</Link>
           </Card>
         </section>
+
       </div>
     </div>
   )

@@ -46,8 +46,9 @@ export default function AppSidebar({ open, collapsed, onNavigate, onToggleCollap
       </button>
       </div>
 
-      <NavigationGroup title="Workspace" items={primaryNavigation} onNavigate={onNavigate} collapsed={collapsed} />
-      <NavigationGroup title="Study tools" items={workspaceNavigation} onNavigate={onNavigate} collapsed={collapsed} />
+      <NavigationGroup title="learn" items={primaryNavigation} onNavigate={onNavigate} collapsed={collapsed} />
+      <NavigationGroup title="plan" items={workspaceNavigation} onNavigate={onNavigate} collapsed={collapsed} />
+      <NavigationGroup title="track" items={settingsNavigation} onNavigate={onNavigate} collapsed={collapsed} />
       <div className="sidebar-bottom" />
     </aside>
   )

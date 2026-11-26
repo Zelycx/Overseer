@@ -37,6 +37,6 @@ Android builds require a configured JDK and Android SDK.
 
 ## Data transfer
 
-Use **Profile & settings → Export workspace JSON** in Android or **Settings → Export application data** in Web. Import the JSON on the other platform and confirm the merge. Existing records are retained; identical IDs and records are deduplicated, conflicting IDs are preserved as separate records, and device-specific preferences and active timer state remain local. The file contains courses, lessons, materials, tasks, events, planner blocks, focus sessions, preferences, and timer state in a versioned `{"version":5,"data":...}` envelope. Legacy Web version 4 exports and Android SharedPreferences are migrated on load.
+Use **Settings → Export workspace JSON** in Android or **Settings → Export application data** in Web. Import the JSON on the other platform and confirm the merge. Existing records are retained; identical IDs and records are deduplicated, conflicting IDs are preserved as separate records, and device-specific preferences and active timer state remain local. The file contains courses, lessons, materials, tasks, events, planner blocks, focus sessions, preferences, and timer state in a versioned `{"version":5,"data":...}` envelope. Legacy Web version 4 exports and Android SharedPreferences are migrated on load.
 
 Imports add records instead of replacing the destination workspace. Reset is a separate, explicitly confirmed action.
