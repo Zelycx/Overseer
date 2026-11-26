@@ -68,7 +68,6 @@ export default function AppHeader({ onMenuClick, onCommandClick, menuOpen }: App
           <span>{online ? 'Online' : 'Offline'}</span>
         </div>
 
-        <Link to="/tasks?new=1" className="button button--primary button--small header-quick-action"><Plus size={15} /><span>New task</span></Link>
         <Link to="/settings" className="profile-button" aria-label="Open settings">
           <span className="profile-avatar">{data.preferences.displayName ? data.preferences.displayName.trim().slice(0, 2).toUpperCase() : <CircleUserRound size={17} aria-hidden="true" />}</span>
           <span className="profile-name">{data.preferences.displayName || 'Settings'}</span>

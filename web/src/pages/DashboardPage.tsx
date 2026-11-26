@@ -1,5 +1,4 @@
-
-import { ArrowRight, BookOpen, Clock3, Flame, MoreHorizontal, Plus, Sparkles, Target } from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarDays, Clock3, Flame, ListChecks, MoreHorizontal, Plus, Sparkles, Target } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { useAppData } from '../app/AppDataContext'
@@ -53,165 +52,253 @@ export default function DashboardPage() {
     ...data.tasks.filter((task) => task.completed && task.completedAt).map((task) => ({ at: task.completedAt!, title: `Completed ${task.title}`, detail: courseById(task.courseId) })),
   ].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 3)
 
-  return (
-    <div className="dashboard-page">
-      <div className="dashboard-welcome-row">
-        <div><p className="dashboard-date">{formatDate(today)}</p><h2>{greeting}{data.preferences.displayName && `, ${data.preferences.displayName}`} <span className="greeting-star">✳</span></h2><p className="dashboard-subtitle">Here’s a little space to make progress.</p></div>
-        <ButtonLink to="/day-planner" variant="secondary"><Sparkles size={16} /> Plan my day</ButtonLink>
+return (
+  <div className="dashboard-page">
+    <div className="dashboard-welcome-row">
+      <div>
+        <p className="dashboard-date">{formatDate(today)}</p>
+        <h2>
+          {greeting}{data.preferences.displayName && `, ${data.preferences.displayName}`}{' '}
+          <span className="greeting-star">✳</span>
+        </h2>
+        <p className="dashboard-subtitle">Here’s a little space to make progress.</p>
       </div>
+      <ButtonLink to="/day-planner" variant="secondary">
+        <Sparkles size={16} /> Plan my day
+      </ButtonLink>
+    </div>
 
-      <div className="dashboard-grid dashboard-grid--middle">
-        <section className="dashboard-section">
-          <SectionHeading title="Coming up" detail="Your schedule for today" action={<Link className="text-link" to="/schedule">View Schedule <ArrowRight size={14} /></Link>} />
-          <Card className="agenda-card" padding="small">
-            {todayEvents.length ? todayEvents.slice(0, 4).map((event, index) => (
-              <div className={`agenda-row${index === 0 ? ' agenda-row--next' : ''}`} key={event.id}>
-                <div className="agenda-time">
-                  <strong>{formatTime(event.startTime, data.preferences.timeFormat)}</strong>
-                  <span>{formatTime(event.endTime, data.preferences.timeFormat)}</span>
-                </div>
-                <span className={`agenda-marker agenda-marker--${event.color}`} />
-                <div className="agenda-event">
-                  <strong>{event.title}</strong>
-                  <span>{courseById(event.courseId)}{event.location ? ` · ${event.location}` : ''}</span>
-                </div>
-                {upcoming[0]?.id === event.id && <Badge tone="soft">UP NEXT</Badge>}
-              </div>
-            )) : <p className="empty-copy">Nothing scheduled today. Add an event when you’re ready.</p>}
-          </Card>
-        </section>
-
-
-        <section className="dashboard-section">
-          <SectionHeading title="Your priorities" detail={`${pending.length} pending · ${completed.length} completed`} action={<Link className="text-link" to="/tasks">View Tasks <ArrowRight size={14} /></Link>} />
-          <Card className="tasks-card" padding="small">
-            {pending.slice(0, 3).map((task) => (
-              <div className="task-row" key={task.id}>
-                <motion.button type="button" className="task-check task-check-button" aria-label={`Complete ${task.title}`} onClick={() => update({ tasks: data.tasks.map((item) => item.id === task.id ? { ...item, completed: true, completedAt: new Date().toISOString() } : item) })} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.88 }} transition={{ type: 'spring', stiffness: 480, damping: 24 }} />
-                <div className="task-info"><strong>{task.title}</strong><span>{courseById(task.courseId)}</span></div>
-                <div className="task-meta"><span className={`priority-dot priority-dot--${task.priority.toLowerCase()}`} /><span>{task.dueDate ? formatDate(task.dueDate, { month: 'short', day: 'numeric' }) : 'No due date'}</span></div>
-              </div>
-            ))}
-{pending.length === 0 && (
-  <div className="empty-tasks-content">
-    <p className="empty-copy">
-      You’re all caught up. Add a task when the next one comes along.
-    </p>
-    <Link
-      to="/assistant"
-      className="callout-icon"
-      aria-label="Open study assistant"
-    >
-      <Sparkles size={24} />
+    {/* ROW 1 */}
+    <div className="dashboard-grid dashboard-grid--balanced">
+      <section className="dashboard-section">
+        <SectionHeading
+  title="Coming up"
+  detail="Your schedule for today"
+  icon={
+<Link to="/schedule?new=1" className="section-heading__icon-link" aria-label="Add schedule event">      <CalendarDays size={20} />
     </Link>
-  </div>
-)}          </Card>
-        </section>
-      </div>
-      <div className="dashboard-grid dashboard-grid--top">
-        
-
-        <Card className="focus-summary-card" padding="large">
-          <div className="card-top-line">
-            <span className="stat-icon stat-icon--lime"><Flame size={17} /></span>
-            <Link to="/focus" className="icon-ornament" aria-label="Focus history"><MoreHorizontal size={19} /></Link>
-          </div>
-          <span className="eyebrow">FOCUS THIS WEEK</span>
-         <div className="focus-value">
-  <div className="focus-value-main">
-    {durationLabel(weekly.reduce((sum, day) => sum + day.seconds, 0))}
-    <span className="focus-change">
-      <Clock3 size={13} /> {data.focusSessions.length} sessions
-    </span>
-  </div>
-
-  <span className="muted-copy focus-secondary">
-    {durationLabel(todayFocusSeconds)} today · {durationLabel(totalFocusSeconds)} total
-  </span>
-</div><div className="week-bars" aria-label="Weekly focus time chart">
-            {weekly.map((day, index) => (
-              <div className="week-bar-column" key={`${day.label}-${index}`} title={`${day.label}: ${durationLabel(day.seconds)}`}>
-                <span className={`week-bar${localDateKey(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + index)) === today ? ' week-bar--today' : ''}`} style={{ height: `${Math.max(day.seconds ? 10 : 5, day.seconds / maxFocus * 100)}%` }} />
-                <small>{day.label}</small>
+  }
+/>
+<Link to="/schedule" className="dashboard-card-link">
+  <Card className="agenda-card" padding="small">          {todayEvents.length ? todayEvents.slice(0, 4).map((event, index) => (
+            <div className={`agenda-row${index === 0 ? ' agenda-row--next' : ''}`} key={event.id}>
+              <div className="agenda-time">
+                <strong>{formatTime(event.startTime, data.preferences.timeFormat)}</strong>
+                <span>{formatTime(event.endTime, data.preferences.timeFormat)}</span>
               </div>
-            ))}
-          </div>
+              <span className={`agenda-marker agenda-marker--${event.color}`} />
+              <div className="agenda-event">
+                <strong>{event.title}</strong>
+                <span>{courseById(event.courseId)}{event.location ? ` · ${event.location}` : ''}</span>
+              </div>
+              {upcoming[0]?.id === event.id && <Badge tone="soft">UP NEXT</Badge>}
+            </div>
+          )) : <p className="empty-copy">Nothing scheduled today. Add an event when you’re ready.</p>}
         </Card>
+        </Link>
+      </section>
 
-        <section className="dashboard-section">
-          <SectionHeading title="Upcoming events" detail="Your next scheduled events" action={<Link className="text-link" to="/schedule">View Schedule <ArrowRight size={14} /></Link>} />
-          <Card className="agenda-card upcoming-event-list" padding="small">
-            {upcomingEvents.map((event, index) => (
-              <div className="agenda-row" key={`${event.id}-${event.displayDate}-${index}`}>
-                <div className="agenda-time">
-                  <strong>{formatDate(event.displayDate, { weekday: 'short', month: 'short', day: 'numeric' })}</strong>
-                  <span>{formatTime(event.startTime, data.preferences.timeFormat)} – {formatTime(event.endTime, data.preferences.timeFormat)}</span>
-                </div>
-                <span className={`agenda-marker agenda-marker--${event.color}`} />
-                <div className="agenda-event">
-                  <strong>{event.title}</strong>
-                  <span>{courseById(event.courseId)}{event.location ? ` · ${event.location}` : ''}</span>
-                </div>
+      <section className="dashboard-section">
+      <SectionHeading
+  title="Your priorities"
+  detail={`${pending.length} pending · ${completed.length} completed`}
+  icon={
+<Link to="/tasks?new=1" className="section-heading__icon-link" aria-label="Create task">      <ListChecks size={20} />
+    </Link>
+  }
+/>   
+<Link to="/tasks" className="dashboard-card-link">
+  <Card className="tasks-card" padding="small">          {pending.slice(0, 3).map((task) => (
+            <div className="task-row" key={task.id}>
+              <motion.button
+                type="button"
+                className="task-check task-check-button"
+                aria-label={`Complete ${task.title}`}
+                onClick={() => update({
+                  tasks: data.tasks.map((item) => item.id === task.id
+                    ? { ...item, completed: true, completedAt: new Date().toISOString() }
+                    : item)
+                })}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: 'spring', stiffness: 480, damping: 24 }}
+              />
+              <div className="task-info">
+                <strong>{task.title}</strong>
+                <span>{courseById(task.courseId)}</span>
               </div>
-            ))}
-            {upcomingEvents.length === 0 && <p className="empty-copy">No upcoming events are scheduled. Add one from your schedule.</p>}
-          </Card>
-        </section>
-      </div>
+              <div className="task-meta">
+                <span className={`priority-dot priority-dot--${task.priority.toLowerCase()}`} />
+                <span>{task.dueDate ? formatDate(task.dueDate, { month: 'short', day: 'numeric' }) : 'No due date'}</span>
+              </div>
+            </div>
+          ))}
+    {pending.length === 0 && (
+  <p className="empty-copy">
+    You’re all caught up. Add a task when the next one comes along.
+  </p>
+)}
+        </Card>
+        </Link>
+      </section>
+    </div>
 
-
+    {/* ROW 2 */}
+    <div className="dashboard-grid dashboard-grid--balanced">
+      <section className="dashboard-section">
+        <SectionHeading
+  title="Upcoming events"
+  detail="Your next scheduled events"
+  icon={
+<Link to="/schedule?new=1" className="section-heading__icon-link" aria-label="Add schedule event">      <CalendarDays size={20} />
+    </Link>
+  }
+/>
+<Link to="/schedule" className="dashboard-card-link">
+  <Card className="agenda-card upcoming-event-list" padding="small">          {upcomingEvents.map((event, index) => (
+            <div className="agenda-row" key={`${event.id}-${event.displayDate}-${index}`}>
+              <div className="agenda-time">
+                <strong>{formatDate(event.displayDate, { weekday: 'short', month: 'short', day: 'numeric' })}</strong>
+                <span>{formatTime(event.startTime, data.preferences.timeFormat)} – {formatTime(event.endTime, data.preferences.timeFormat)}</span>
+              </div>
+              <span className={`agenda-marker agenda-marker--${event.color}`} />
+              <div className="agenda-event">
+                <strong>{event.title}</strong>
+                <span>{courseById(event.courseId)}{event.location ? ` · ${event.location}` : ''}</span>
+              </div>
+            </div>
+          ))}
+          {upcomingEvents.length === 0 && (
+            <p className="empty-copy">No upcoming events are scheduled. Add one from your schedule.</p>
+          )}
+        </Card>
+        </Link>
+      </section>
 
       <section className="dashboard-section courses-section">
-        <SectionHeading title="Pick up where you left off" detail="A little progress goes a long way" action={<Link className="text-link" to="/library">View Study <ArrowRight size={14} /></Link>} />
+       <SectionHeading
+  title="Pick up where you left off"
+  detail="A little progress goes a long way"
+  icon={
+<Link to="/library/import" className="section-heading__icon-link" aria-label="Add study material">      <BookOpen size={20} />
+    </Link>
+  }
+/>
         <div className="course-grid">
           {courses.map((course) => (
-            <Card className="course-card" key={course.id} padding="medium">
-              <div className="course-card__top">
-                <span className={`course-icon course-icon--${course.tint}`}><BookOpen size={17} /></span>
+            
+<Link
+  to={`/courses/${course.id}`}
+  className="dashboard-card-link"
+  key={course.id}
+>
+  <Card className="course-card" padding="medium">              <div className="course-card__top">
+                <span className={`course-icon course-icon--${course.tint}`}>
+                  <BookOpen size={17} />
+                </span>
                 <span className="course-code">{course.code || 'COURSE'}</span>
-                <span className="icon-ornament course-menu" aria-hidden="true"><MoreHorizontal size={18} /></span>
+                <span className="icon-ornament course-menu" aria-hidden="true">
+                  <MoreHorizontal size={18} />
+                </span>
               </div>
-              
-              <Link className="course-card__title" to={`/courses/${course.id}`}>{course.name}</Link>
+              <span className="course-card__title">{course.name}</span>
               <p>{course.lessonsComplete} of {course.lessonsTotal} lessons completed</p>
               <div className="course-progress">
                 <ProgressBar value={course.progress} label={`${course.name} course progress`} />
                 <span>{course.progress}%</span>
               </div>
             </Card>
+            </Link>
           ))}
         </div>
+        {courses.length === 0 && (
+  <Link to="/library" className="dashboard-card-link">
+    <Card padding="small">
+      <div className="empty-tasks-content">
+        <p className="empty-copy">Create your first course in the study library.</p>
+        <Link to="/assistant" className="callout-icon" aria-label="Open study assistant">
+          <Sparkles size={24} />
+        </Link>
+      </div>
+    </Card>
+  </Link>
+)}
+      </section>
+    </div>
+
+    {/* ROW 3 */}
+    <div className="dashboard-grid dashboard-grid--balanced">
+      <section className="dashboard-section">
+        <SectionHeading
+  title="Focus"
+  icon={
+<Link to="/focus?start=1" className="section-heading__icon-link" aria-label="Start focus session">      <Flame size={20} />
+    </Link>
+  }
+/>
+<Link to="/focus" className="dashboard-card-link">
+  <Card className="focus-summary-card" padding="large">          <div className="card-top-line">
         
-        {courses.length === 0 && <Card padding="medium"><p className="empty-copy">Create your first course in the study library.</p></Card>}
+          </div>
+          <span className="eyebrow">FOCUS THIS WEEK</span>
+          <div className="focus-value">
+            <div className="focus-value-main">
+              {durationLabel(weekly.reduce((sum, day) => sum + day.seconds, 0))}
+              <span className="focus-change">
+                <Clock3 size={13} /> {data.focusSessions.length} sessions
+              </span>
+            </div>
+            <span className="muted-copy focus-secondary">
+              {durationLabel(todayFocusSeconds)} today · {durationLabel(totalFocusSeconds)} total
+            </span>
+          </div>
+          <div className="week-bars" aria-label="Weekly focus time chart">
+            {weekly.map((day, index) => (
+              <div
+                className="week-bar-column"
+                key={`${day.label}-${index}`}
+                title={`${day.label}: ${durationLabel(day.seconds)}`}
+              >
+                <span
+                  className={`week-bar${localDateKey(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + index)) === today ? ' week-bar--today' : ''}`}
+                  style={{ height: `${Math.max(day.seconds ? 10 : 5, day.seconds / maxFocus * 100)}%` }}
+                />
+                <small>{day.label}</small>
+              </div>
+            ))}
+          </div>
+        </Card>
+        </Link>
       </section>
 
-      <div className="dashboard-grid dashboard-extra-grid">
-        <section>
-          <SectionHeading title="Recent learning activity" action={<Link className="text-link" to="/progress">View progress <ArrowRight size={14} /></Link>} />
-          <Card padding="small">
-            {recent.length ? recent.map((item, index) => (
-              <div className="activity-row" key={`${item.at}-${index}`}>
-                <span className="activity-dot" />
-                <span>
-                  <strong>{item.title}</strong>
-                  <small>{item.detail} · {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(item.at))}</small>
-                </span>
-              </div>
-            )) : <p className="empty-copy">Completed lessons, tasks, and focus sessions will show up here.</p>}
-          </Card>
-        </section>
-
-        <section>
-          <SectionHeading title="Quick actions" />
-          <Card className="quick-actions" padding="medium">
-            <Link to="/tasks?new=1"><Plus size={16} /> Create task</Link>
-            <Link to="/schedule?new=1"><Plus size={16} /> Add schedule event</Link>
-            <Link to="/focus?start=1"><Flame size={16} /> Start focus session</Link>
-            <Link to="/library/import"><BookOpen size={16} /> Add study material</Link>
-          </Card>
-        </section>
-
-      </div>
+      <section className="dashboard-section">
+        <SectionHeading
+          title="Recent learning activity"
+        />
+<Link to="/progress" className="dashboard-card-link">
+  <Card padding="small">          {recent.length ? recent.map((item, index) => (
+            <div className="activity-row" key={`${item.at}-${index}`}>
+              <span className="activity-dot" />
+              <span>
+                <strong>{item.title}</strong>
+                <small>
+                  {item.detail} · {new Intl.DateTimeFormat(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  }).format(new Date(item.at))}
+                </small>
+              </span>
+            </div>
+          )) : (
+            <p className="empty-copy">Completed lessons, tasks, and focus sessions will show up here.</p>
+          )}
+        </Card>
+        </Link>
+      </section>
     </div>
-  )
+  </div>
+)
+
 }
