@@ -4,6 +4,7 @@ import FirebaseCore
 @main
 struct OverseerApp: App {
     @StateObject private var store = AppStore()
+    @StateObject private var googleIntegrations = GoogleIntegrationsStore()
 
     init() {
         guard FirebaseApp.app() == nil,
@@ -15,7 +16,9 @@ struct OverseerApp: App {
         WindowGroup {
             RootTabView()
                 .environmentObject(store)
+                .environmentObject(googleIntegrations)
                 .tint(OverseerColor.navy)
+                .onOpenURL { googleIntegrations.handleCallback($0) }
         }
     }
 }

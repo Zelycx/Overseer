@@ -17,7 +17,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["googleOAuthHost"] = providers.gradleProperty("googleOAuthHost").orElse("oauth.example.invalid").get()
+        buildConfigField("String", "GOOGLE_WORKER_URL", "\"${providers.gradleProperty("googleWorkerUrl").orElse("https://REPLACE_WITH_WORKER_HOST").get()}\"")
     }
+
+    buildFeatures { buildConfig = true }
 
     buildTypes {
         release {
@@ -43,6 +47,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
+    implementation(libs.androidx.browser)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)

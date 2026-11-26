@@ -56,6 +56,7 @@ struct ScheduleView: View {
     }
     var body: some View {
         PageBackground {
+            GoogleIntegrationPanel(provider: .calendar)
             HStack {
                 Button { shift(-1) } label: { Image(systemName: "chevron.left") }
                 Spacer()
@@ -80,6 +81,7 @@ struct LibraryView: View {
     @State private var showingAdd = false
     var body: some View {
         PageBackground {
+            GoogleIntegrationPanel(provider: .classroom)
             SectionTitle(title: "Your subjects", action: { showingAdd = true }, actionTitle: "+ Add subject")
             ForEach(store.subjects) { subject in
                 NavigationLink { SubjectDetailView(subjectID: subject.id) } label: {

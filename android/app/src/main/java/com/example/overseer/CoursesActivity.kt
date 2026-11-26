@@ -37,6 +37,11 @@ class CoursesActivity : AppCompatActivity() {
 
         val list = findViewById<LinearLayout>(R.id.courseList)
         val status = findViewById<TextView>(R.id.courseStatus)
+        val googleResults = findViewById<TextView>(R.id.googleClassroomResults)
+        val googleButton = findViewById<MaterialButton>(R.id.refreshGoogleClassroom)
+        var googleCursor: String? = null
+        var restartClassroomFromBeginning = false
+        val googleCourses = linkedMapOf<String, MutableMap<String, Any?>>()
         val repository = AuthenticatedFirestoreRepository(FirebaseFirestore.getInstance())
 
         listener = repository.observeCollection(
@@ -52,6 +57,90 @@ class CoursesActivity : AppCompatActivity() {
 
         findViewById<MaterialButton>(R.id.newCourseButton).setOnClickListener {
             showCourseDialog(repository, null)
+        }
+        findViewById<MaterialButton>(R.id.manageGoogleClassroom).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        googleButton.setOnClickListener {
+            googleResults.text = "Loading Google Classroom courses…"
+            val cursorForRequest = if (restartClassroomFromBeginning) null else googleCursor
+            val suffix = cursorForRequest?.let { "/courses?cursor=${java.net.URLEncoder.encode(it, "UTF-8")}" } ?: "/courses"
+            GoogleWorkerClient.async(this, "GET", GoogleWorkerClient.path("classroom", suffix)) { result, error ->
+                    val workerError = error as? GoogleWorkerClient.GoogleWorkerException
+                    val page = result ?: workerError?.payload?.takeIf { it.containsKey("courses") }
+                    if (page == null) {
+                        if (workerError?.code == "INVALID_PAGE_CURSOR") {
+                            googleCursor = null
+                            restartClassroomFromBeginning = true
+                            googleButton.text = "Refresh from beginning"
+                            googleResults.text = "This continuation expired or is invalid. Loaded courses are preserved; refresh to restart."
+                            return@async
+                        }
+                        googleResults.text = when {
+                            workerError?.status == 401 -> "Overseer sign-in expired. Sign in again to load Google Classroom."
+                            workerError != null && GoogleWorkerClient.cursorRecovery(workerError) == GoogleWorkerClient.CursorRecovery.RESTART_FROM_BEGINNING -> {
+                                googleCursor = null
+                                restartClassroomFromBeginning = true
+                                googleButton.text = "Refresh from beginning"
+                                "${workerError.message} Loaded courses are preserved; refresh from the beginning after reconnecting."
+                            }
+                            workerError != null -> workerError.message
+                            else -> "Google Classroom is unavailable because of a network error. Retry when connected."
+                        }
+                        return@async
+                    }
+                    val records = page["courses"] as? List<*> ?: emptyList<Any>()
+                    records.forEach { raw ->
+                        val record = raw as? Map<*, *> ?: return@forEach
+                        val course = record["course"] as? Map<*, *> ?: return@forEach
+                        val id = course["id"] as? String ?: return@forEach
+                        val previous = googleCourses[id]
+                        fun mergeRows(key: String): List<Any?> {
+                            val rows = ((previous?.get(key) as? List<*>)?.toList() ?: emptyList()) + ((record[key] as? List<*>)?.toList() ?: emptyList())
+                            return rows.distinctBy { (it as? Map<*, *>)?.get("id") ?: it.toString() }
+                        }
+                        googleCourses[id] = mutableMapOf("course" to course, "courseWork" to mergeRows("courseWork"), "announcements" to mergeRows("announcements"))
+                    }
+                    val pagination = page["pagination"] as? Map<*, *>
+                    val pageError = page["error"] as? Map<*, *>
+                    val errorCode = (pageError?.get("code") as? String) ?: workerError?.code
+                    val errorMessage = (pageError?.get("message") as? String) ?: workerError?.message
+                    googleCursor = pagination?.get("nextCursor") as? String
+                    if (errorCode == "INVALID_PAGE_CURSOR") {
+                        googleCursor = null
+                        restartClassroomFromBeginning = true
+                        googleButton.text = "Refresh from beginning"
+                    } else if (pageError?.get("retryable") == false && googleCursor != null) {
+                        restartClassroomFromBeginning = false
+                        googleButton.text = "Continue past failed page"
+                    } else if (pageError?.get("retryable") == false || (workerError != null && GoogleWorkerClient.cursorRecovery(workerError) == GoogleWorkerClient.CursorRecovery.RESTART_FROM_BEGINNING)) {
+                        googleCursor = null
+                        restartClassroomFromBeginning = true
+                        googleButton.text = "Refresh from beginning"
+                    } else {
+                        restartClassroomFromBeginning = false
+                        googleButton.text = if (googleCursor == null) "Refresh" else "Load more"
+                    }
+                    val lines = googleCourses.values.mapNotNull { raw ->
+                        val record = raw as? Map<*, *> ?: return@mapNotNull null
+                        val course = record["course"] as? Map<*, *> ?: return@mapNotNull null
+                        val name = course["name"] as? String ?: "Google Classroom course"
+                        val work = (record["courseWork"] as? List<*>)?.mapNotNull { (it as? Map<*, *>)?.get("title") as? String } ?: emptyList()
+                        val announcements = (record["announcements"] as? List<*>)?.mapNotNull { (it as? Map<*, *>)?.get("text") as? String } ?: emptyList()
+                        val workSummary = if (work.isEmpty()) "No coursework" else "Coursework: ${work.take(3).joinToString(", ")}"
+                        val announcementsSummary = if (announcements.isEmpty()) "No announcements" else "Announcements: ${announcements.take(3).joinToString(" · ")}"
+                        "Google Classroom · $name\n$workSummary\n$announcementsSummary"
+                    }
+                    val listing = if (lines.isEmpty()) "No Google Classroom records have loaded yet." else lines.take(50).joinToString("\n\n")
+                    googleResults.text = when {
+                        errorCode == "INVALID_PAGE_CURSOR" -> "$listing\n\nThis continuation expired or is invalid. Loaded records are preserved; refresh to restart."
+                        errorMessage != null && pageError?.get("retryable") == true -> "$listing\n\n$errorMessage"
+                        errorMessage != null -> "$listing\n\n$errorMessage Refresh from the beginning after reconnecting or correcting the request."
+                        googleCursor != null -> "$listing\n\nMore courses or classwork are available. Tap Load more."
+                        lines.isEmpty() -> "No active Google Classroom courses found."
+                        else -> listing
+                    }
+                }
         }
 
         val bottom = findViewById<BottomNavigationView>(R.id.bottomNavigation)
