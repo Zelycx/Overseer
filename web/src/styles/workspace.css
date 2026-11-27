@@ -3,7 +3,7 @@
 .workspace-page > .section-heading { margin: 0; }
 .workspace-page h2, .workspace-page h3 { color: var(--navy); letter-spacing: -.04em; }
 .workspace-page h3 { margin: 0 0 14px; font-size: 16px; }
-.button:focus-within { outline: 3px solid #89b500; outline-offset: 3px; }
+.button:focus-within { outline: 3px solid var(--ring); outline-offset: 3px; }
 .workspace-page .muted-copy, .empty-copy { color: var(--muted); font-size: 12px; line-height: 1.65; }
 .empty-copy { padding: 12px 0; margin: 0; }
 .editor-card { display: grid; gap: 15px; }
@@ -15,7 +15,6 @@
   min-width: 0; width: 100%; padding: 10px 11px; color: #273251; border: 1px solid #e3e1e9; border-radius: 9px; outline: none; background: #fff; font-size: 12px; font-weight: 450;
 }
 .form-field > textarea { resize: vertical; line-height: 1.65; }
-.form-field > input:focus, .form-field > select:focus, .form-field > textarea:focus, .filter-row select:focus, .search-field:focus-within, .date-input-label input:focus, .schedule-day-picker input:focus { border-color: #a9c93a; box-shadow: 0 0 0 3px rgb(193 255 0 / 15%); }
 .form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
 .inline-notice { padding: 10px 12px; margin: 0; border: 1px solid #e4e8d6; border-radius: 9px; background: #f8fbeF; color: #52602f; font-size: 11px; line-height: 1.55; }
 .inline-notice--error { color: #9b4b37; border-color: #f0d8d0; background: #fff7f4; }
@@ -33,7 +32,7 @@
 .managed-task { display: flex; align-items: flex-start; gap: 13px; }
 .managed-task--complete .managed-task__main > strong { color: #8690a1; text-decoration: line-through; }
 .task-check-button { display: grid; place-items: center; padding: 0; cursor: pointer; }
-.task-check-button:hover { border-color: #96b936; background: #f3f8e5; }
+.task-check-button:hover { border-color: var(--ring); background: var(--accent-soft); }
 .task-check--done { color: #526811; border-color: #c8de8e; background: #f1f7dd; }
 .managed-task__main { display: grid; gap: 7px; min-width: 0; flex: 1; }
 .managed-task__main > strong { color: #2d3655; font-size: 12px; }
@@ -54,8 +53,6 @@
 .week-day > span { color: #939aad; font-size: 8px; }
 .week-day:hover { border-color: #d6e39f; }
 .week-day--today strong { color: #667c1c; background: #f0f6dc; }
-.week-day--active { border-color: #d8e89e; background: #fafcef; box-shadow: 0 0 0 2px rgb(193 255 0 / 12%); }
-.week-day--active strong { color: var(--navy); background: var(--lime); }
 .schedule-detail { display: grid; gap: 13px; }
 .schedule-detail__heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .schedule-detail__heading .eyebrow { margin: 0 0 5px; }

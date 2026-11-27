@@ -3,7 +3,7 @@
 .dashboard-welcome-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .dashboard-date { margin: 0 0 8px; color: #727b94; font-size: 10px; font-weight: 580; }
 .dashboard-welcome-row h2 { margin: 0; color: var(--navy); font-size: clamp(22px, 2.5vw, 29px); font-weight: 720; letter-spacing: -.06em; }
-.greeting-star { display: inline-block; color: #a6cf11; font-size: 19px; transform: translateY(-2px); }
+.greeting-star { display: inline-block; font-size: 19px; transform: translateY(-2px); }
 .dashboard-subtitle { margin: 7px 0 0; color: #78809a; font-size: 11px; }
 .dashboard-welcome-row > .button { margin-bottom: 2px; }
 
@@ -44,7 +44,7 @@
 .day-plan-card__top h3 { margin: 11px 0 0; font-size: 25px; letter-spacing: -.055em; line-height: 1.08; }
 .day-plan-ornament { position: absolute; top: -43px; right: -39px; width: 170px; height: 170px; border: 1px solid rgb(255 255 255 / 10%); border-radius: 50%; }
 .day-plan-ornament::before, .day-plan-ornament::after { position: absolute; inset: 16px; border: 1px solid rgb(255 255 255 / 10%); border-radius: 50%; content: ""; }
-.day-plan-ornament::after { inset: 34px; border-color: rgb(193 255 0 / 35%); }
+.day-plan-ornament::after { inset: 34px; border-color: color-mix(in srgb, var(--accent-color) 35%, transparent); }
 .day-plan-ornament span { position: absolute; z-index: 1; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); }
 .day-plan-ornament span:first-child { top: 42px; left: 36px; }
 .day-plan-ornament span:nth-child(2) { right: 23px; bottom: 52px; width: 5px; height: 5px; background: #a9b4d1; }

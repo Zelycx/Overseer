@@ -47,7 +47,7 @@ body { font-family: var(--font-sans); font-size: var(--text-base); line-height: 
 .button--medium { min-height: 44px; padding: 0 17px; font-size: 14px; }
 .button--large { min-height: 52px; padding: 0 21px; font-size: 15px; }
 .button--primary { color: var(--primary-foreground); border-color: var(--primary); background: var(--primary); box-shadow: 0 4px 12px color-mix(in srgb, var(--navy) 16%, transparent); }
-.button--primary:hover { color: var(--primary-foreground); background: color-mix(in srgb, var(--primary) 88%, var(--text-primary)); box-shadow: 0 7px 18px color-mix(in srgb, var(--navy) 18%, transparent); }
+.button--primary:hover { color: var(--primary-foreground); background: color-mix(in srgb, var(--primary) 88%, var(--text-primary)); box-shadow: 0 7px 18px color-mix(in srgb, var(--accent-color) 18%, transparent); }
 .button--secondary, .button--outline { color: var(--text-primary); border-color: var(--border); background: var(--surface-raised); }
 .button--secondary:hover, .button--outline:hover { color: var(--text-primary); border-color: color-mix(in srgb, var(--border) 50%, var(--accent-color)); background: var(--subtle-surface); }
 .button--quiet { color: var(--text-secondary); }
@@ -149,7 +149,7 @@ body { font-family: var(--font-sans); font-size: var(--text-base); line-height: 
 .dashboard-page { gap: 28px; }
 .dashboard-welcome-row h2 { font-size: clamp(27px, 2.5vw, 36px); line-height: 1.1; }
 .dashboard-date, .dashboard-subtitle { color: var(--text-muted); font-size: 14px; }
-.greeting-star { color: var(--accent-color); }
+.greeting-star { color: var(--ring); }
 .dashboard-grid { gap: 17px; }
 .dashboard-grid--middle { gap: 19px; }
 .day-plan-card { min-height: 236px; color: #fff; border: 1px solid transparent; border-radius: var(--radius-lg); background: var(--navy); box-shadow: 0 14px 32px color-mix(in srgb, var(--navy) 15%, transparent); }
@@ -341,7 +341,7 @@ body { font-family: var(--font-sans); font-size: var(--text-base); line-height: 
 }
 
 .sidebar .brand__word {
-  color: var(--primary-foreground);
+  color: var(--sidebar-foreground);
 }
 .nav-group__title { color: color-mix(in srgb, white 70%, var(--navy)); }
 .nav-link--active, .nav-link--active:hover { background: rgb(255 255 255 / 13%); }
@@ -372,9 +372,9 @@ body { font-family: var(--font-sans); font-size: var(--text-base); line-height: 
 .appearance-control-heading p { margin: 4px 0 0; color: var(--text-muted); font-size: 13px; }
 .theme-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .theme-option { display: grid; align-content: start; gap: 11px; min-width: 0; padding: 10px; color: var(--text-primary); text-align: left; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-raised); cursor: pointer; transition: border-color var(--duration-fast), box-shadow var(--duration-fast), transform var(--duration-fast), background-color var(--duration-fast); }
-.theme-option:hover { border-color: color-mix(in srgb, var(--border) 45%, var(--accent-color)); transform: translateY(-2px); }
+.theme-option:hover { border-color: var(--ring); transform: translateY(-2px); }
 .theme-option:focus-visible, .accent-swatch:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
-.theme-option--selected { border-color: var(--accent-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 23%, transparent); }
+.theme-option--selected { border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 23%, transparent); }
 .theme-preview { display: flex; gap: 6px; height: 82px; overflow: hidden; padding: 7px; border: 1px solid var(--border); border-radius: 7px; background: var(--background); }
 .theme-preview__rail { width: 23%; flex: 0 0 auto; border-radius: 4px; background: var(--navy); }
 .theme-preview__rail::after { display: block; width: 11px; height: 4px; margin: 8px auto; border-radius: 3px; background: var(--accent-color); content: ""; }
@@ -398,7 +398,8 @@ body { font-family: var(--font-sans); font-size: var(--text-base); line-height: 
 .theme-option__label > span:first-child { align-items: flex-start; flex-direction: column; gap: 3px; }
 .theme-option__label strong { color: var(--text-primary); font-size: 13px; font-weight: var(--weight-semibold); }
 .theme-option__label small { color: var(--text-muted); font-size: 11px; line-height: 1.4; }
-.theme-option__selected { flex: 0 0 auto; gap: 4px; color: var(--accent-foreground); font-size: 11px; font-weight: 700; }
+.theme-option__selected { flex: 0 0 auto; gap: 4px; color: var(--text-primary); font-size: 11px; font-weight: 700; }
+.theme-option__selected svg { color: var(--ring); }
 .appearance-controls-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; padding-top: 19px; border-top: 1px solid var(--border); }
 .accent-options { display: flex; flex-wrap: wrap; gap: 11px; }
 .accent-swatch { display: grid; place-items: center; width: 38px; height: 38px; padding: 4px; border: 1px solid var(--border); border-radius: 50%; background: transparent; cursor: pointer; transition: transform var(--duration-fast), border-color var(--duration-fast), box-shadow var(--duration-fast); }
@@ -738,9 +739,6 @@ body { color: var(--text-primary); background: var(--background); font-family: R
 .search-field, .date-input-label input, .schedule-day-picker input, .material-card__footer select {
   color: var(--text-primary); border-color: var(--border); border-radius: 10px; background: var(--surface); font-size: 14px;
 }
-.form-field > input:focus, .form-field > select:focus, .form-field > textarea:focus,
-.filter-row select:focus, .search-field:focus-within, .date-input-label input:focus,
-.schedule-day-picker input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgb(193 255 0 / 24%); }
 .filter-chip, .week-day { color: var(--text-secondary); border-color: var(--border); border-radius: 10px; background: var(--surface); font-size: 12px; }
 .filter-chip--active, .week-day--active { color: var(--accent-foreground); border-color: var(--accent-color); background: var(--accent-soft); }
 .week-day--today strong { color: var(--accent-foreground); background: var(--accent-soft); }
