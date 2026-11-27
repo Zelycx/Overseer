@@ -9,4 +9,4 @@ xcuserdata/
 *.xcworkspace/xcuserdata/
 android/.idea/
 backend/.env
-
+ios/Overseer/GoogleService-Info.plist

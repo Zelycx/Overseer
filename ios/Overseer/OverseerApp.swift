@@ -1,14 +1,24 @@
 import SwiftUI
+import FirebaseCore
 
 @main
 struct OverseerApp: App {
     @StateObject private var store = AppStore()
+    @StateObject private var googleIntegrations = GoogleIntegrationsStore()
+
+    init() {
+        guard FirebaseApp.app() == nil,
+              Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist") != nil else { return }
+        FirebaseApp.configure()
+    }
 
     var body: some Scene {
         WindowGroup {
             RootTabView()
                 .environmentObject(store)
+                .environmentObject(googleIntegrations)
                 .tint(OverseerColor.navy)
+                .onOpenURL { googleIntegrations.handleCallback($0) }
         }
     }
 }

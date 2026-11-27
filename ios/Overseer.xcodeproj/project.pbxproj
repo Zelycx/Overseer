@@ -5,14 +5,22 @@
 	objectVersion = 56;
 	objects = {
 /* Begin PBXBuildFile section */
+		A10000000000000000000010 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* GoogleService-Info.plist */; };
+		A10000000000000000000007 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000001 /* FirebaseAuth */; };
+		A10000000000000000000008 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000002 /* FirebaseFirestore */; };
+		A10000000000000000000009 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000003 /* FirebaseFunctions */; };
 		A10000000000000000000001 /* OverseerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* OverseerApp.swift */; };
 		A10000000000000000000002 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* AppStore.swift */; };
 		A10000000000000000000003 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* DesignSystem.swift */; };
 		A10000000000000000000004 /* MainViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* MainViews.swift */; };
 		A10000000000000000000005 /* ExtraViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* ExtraViews.swift */; };
 		A10000000000000000000006 /* CanonicalFirestoreModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* CanonicalFirestoreModels.swift */; };
+		A10000000000000000000011 /* GoogleIntegrations.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* GoogleIntegrations.swift */; };
+		A10000000000000000000012 /* GoogleOAuthSupportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* GoogleOAuthSupportTests.swift */; };
+		A10000000000000000000013 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* XCTest.framework */; };
 /* End PBXBuildFile section */
 /* Begin PBXFileReference section */
+		A20000000000000000000008 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		A20000000000000000000001 /* OverseerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverseerApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
@@ -20,33 +28,55 @@
 		A20000000000000000000005 /* ExtraViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtraViews.swift; sourceTree = "<group>"; };
 		A20000000000000000000006 /* Overseer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Overseer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000007 /* CanonicalFirestoreModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanonicalFirestoreModels.swift; sourceTree = "<group>"; };
+		A20000000000000000000009 /* GoogleIntegrations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleIntegrations.swift; sourceTree = "<group>"; };
+		A20000000000000000000012 /* Overseer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Overseer.entitlements; sourceTree = "<group>"; };
+		A20000000000000000000013 /* GoogleOAuthSupportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleOAuthSupportTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000014 /* OverseerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OverseerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000015 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 /* Begin PBXFrameworksBuildPhase section */
-		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000007, A10000000000000000000008, A10000000000000000000009); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000002 /* Test Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000013); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 /* Begin PBXGroup section */
-		A40000000000000000000001 = {isa = PBXGroup; children = (A40000000000000000000002 /* Sources */, A40000000000000000000003 /* Products */); sourceTree = "<group>"; };
-		A40000000000000000000002 /* Sources */ = {isa = PBXGroup; path = Overseer; sourceTree = "<group>"; children = (A20000000000000000000001, A20000000000000000000002, A20000000000000000000003, A20000000000000000000004, A20000000000000000000005, A20000000000000000000007); };
-		A40000000000000000000003 /* Products */ = {isa = PBXGroup; name = Products; children = (A20000000000000000000006); sourceTree = "<group>"; };
+		A40000000000000000000001 = {isa = PBXGroup; children = (A40000000000000000000002 /* Sources */, A40000000000000000000003 /* Products */, A40000000000000000000004 /* Tests */); sourceTree = "<group>"; };
+		A40000000000000000000002 /* Sources */ = {isa = PBXGroup; path = Overseer; sourceTree = "<group>"; children = (A20000000000000000000001, A20000000000000000000002, A20000000000000000000003, A20000000000000000000004, A20000000000000000000005, A20000000000000000000007, A20000000000000000000008, A20000000000000000000009, A20000000000000000000012); };
+		A40000000000000000000003 /* Products */ = {isa = PBXGroup; name = Products; children = (A20000000000000000000006, A20000000000000000000014); sourceTree = "<group>"; };
+		A40000000000000000000004 /* Tests */ = {isa = PBXGroup; path = OverseerTests; sourceTree = "<group>"; children = (A20000000000000000000013); };
 /* End PBXGroup section */
 /* Begin PBXSourcesBuildPhase section */
-		A50000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, A10000000000000000000006); runOnlyForDeploymentPostprocessing = 0; };
+		A50000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, A10000000000000000000006, A10000000000000000000011); runOnlyForDeploymentPostprocessing = 0; };
+		A50000000000000000000003 /* Test Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000012); runOnlyForDeploymentPostprocessing = 0; };
+		A50000000000000000000004 /* Test Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
+/* Begin PBXResourcesBuildPhase section */
+		A50000000000000000000002 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000010); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
 /* Begin PBXNativeTarget section */
-		A60000000000000000000001 /* Overseer */ = {isa = PBXNativeTarget; buildConfigurationList = A90000000000000000000002; buildPhases = (A50000000000000000000001, A30000000000000000000001); buildRules = (); dependencies = (); name = Overseer; productName = Overseer; productReference = A20000000000000000000006; productType = "com.apple.product-type.application"; };
+		A60000000000000000000001 /* Overseer */ = {isa = PBXNativeTarget; buildConfigurationList = A90000000000000000000002; buildPhases = (A50000000000000000000001, A30000000000000000000001, A50000000000000000000002); buildRules = (); dependencies = (); name = Overseer; packageProductDependencies = (B10000000000000000000001, B10000000000000000000002, B10000000000000000000003); productName = Overseer; productReference = A20000000000000000000006; productType = "com.apple.product-type.application"; };
+		A60000000000000000000002 /* OverseerTests */ = {isa = PBXNativeTarget; buildConfigurationList = A90000000000000000000003; buildPhases = (A50000000000000000000003, A30000000000000000000002, A50000000000000000000004); buildRules = (); dependencies = (A60000000000000000000004); name = OverseerTests; productName = OverseerTests; productReference = A20000000000000000000014; productType = "com.apple.product-type.bundle.unit-test"; };
+		A60000000000000000000003 /* App target proxy */ = {isa = PBXContainerItemProxy; containerPortal = A70000000000000000000001; proxyType = 1; remoteGlobalIDString = A60000000000000000000001; remoteInfo = Overseer; };
+		A60000000000000000000004 /* App target dependency */ = {isa = PBXTargetDependency; target = A60000000000000000000001; targetProxy = A60000000000000000000003; };
 /* End PBXNativeTarget section */
 /* Begin PBXProject section */
-		A70000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 2610;}; buildConfigurationList = A90000000000000000000001; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A40000000000000000000001; productRefGroup = A40000000000000000000003; projectDirPath = ""; projectRoot = ""; targets = (A60000000000000000000001); };
+		A70000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 2610;}; buildConfigurationList = A90000000000000000000001; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A40000000000000000000001; packageReferences = (B20000000000000000000001); productRefGroup = A40000000000000000000003; projectDirPath = ""; projectRoot = ""; targets = (A60000000000000000000001, A60000000000000000000002); };
 /* End PBXProject section */
 /* Begin XCBuildConfiguration section */
 		A80000000000000000000001 /* Debug project */ = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0;}; name = Debug; };
 		A80000000000000000000002 /* Release project */ = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0;}; name = Release; };
-		A80000000000000000000003 /* Debug target */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGNING_ALLOWED = NO; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = Overseer; INFOPLIST_KEY_UILaunchScreen_Generation = YES; PRODUCT_BUNDLE_IDENTIFIER = com.overseer.student; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; TARGETED_DEVICE_FAMILY = "1,2";}; name = Debug; };
-		A80000000000000000000004 /* Release target */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGNING_ALLOWED = NO; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = Overseer; INFOPLIST_KEY_UILaunchScreen_Generation = YES; PRODUCT_BUNDLE_IDENTIFIER = com.overseer.student; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; TARGETED_DEVICE_FAMILY = "1,2";}; name = Release; };
+		A80000000000000000000003 /* Debug target */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGNING_ALLOWED = NO; CODE_SIGN_ENTITLEMENTS = Overseer/Overseer.entitlements; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = Overseer; INFOPLIST_KEY_GOOGLE_OAUTH_HOST = oauth.example.invalid; INFOPLIST_KEY_UILaunchScreen_Generation = YES; PRODUCT_BUNDLE_IDENTIFIER = com.overseer.student; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; TARGETED_DEVICE_FAMILY = "1,2";}; name = Debug; };
+		A80000000000000000000004 /* Release target */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGNING_ALLOWED = NO; CODE_SIGN_ENTITLEMENTS = Overseer/Overseer.entitlements; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = Overseer; INFOPLIST_KEY_GOOGLE_OAUTH_HOST = oauth.example.invalid; INFOPLIST_KEY_UILaunchScreen_Generation = YES; PRODUCT_BUNDLE_IDENTIFIER = com.overseer.student; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; TARGETED_DEVICE_FAMILY = "1,2";}; name = Release; };
+		A80000000000000000000005 /* Test Debug */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.overseer.student.tests; SWIFT_VERSION = 5.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Overseer.app/Overseer";}; name = Debug; };
+		A80000000000000000000006 /* Test Release */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.overseer.student.tests; SWIFT_VERSION = 5.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Overseer.app/Overseer";}; name = Release; };
 /* End XCBuildConfiguration section */
 /* Begin XCConfigurationList section */
+		B10000000000000000000001 /* FirebaseAuth */ = {isa = XCSwiftPackageProductDependency; package = B20000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */; productName = FirebaseAuth; };
+		B10000000000000000000002 /* FirebaseFirestore */ = {isa = XCSwiftPackageProductDependency; package = B20000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */; productName = FirebaseFirestore; };
+		B10000000000000000000003 /* FirebaseFunctions */ = {isa = XCSwiftPackageProductDependency; package = B20000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */; productName = FirebaseFunctions; };
+		B20000000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/firebase/firebase-ios-sdk"; requirement = {kind = upToNextMajorVersion; minimumVersion = 11.0.0; }; };
 		A90000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000001, A80000000000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 		A90000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000003, A80000000000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A90000000000000000000003 = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000005, A80000000000000000000006); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 	};
 	rootObject = A70000000000000000000001 /* Project object */;

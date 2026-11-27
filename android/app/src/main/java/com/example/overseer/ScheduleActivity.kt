@@ -62,6 +62,12 @@ class ScheduleActivity : AppCompatActivity() {
         val scheduleDate = findViewById<TextView>(R.id.scheduleDate)
         val firestoreEvents = findViewById<LinearLayout>(R.id.firestoreEvents)
         val noClassesMessage = findViewById<TextView>(R.id.noClassesMessage)
+        val googleCalendarResults = findViewById<TextView>(R.id.googleCalendarResults)
+        val googleCalendarButton = findViewById<Button>(R.id.refreshGoogleCalendar)
+        var googleCalendarCursor: String? = null
+        var googleCalendarRange: Map<String, String>? = null
+        var restartCalendarFromBeginning = false
+        val googleEvents = linkedMapOf<String, String>()
         val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
         val calendar = Calendar.getInstance()
 
@@ -80,6 +86,97 @@ class ScheduleActivity : AppCompatActivity() {
         }
 
         val repository = AuthenticatedFirestoreRepository(FirebaseFirestore.getInstance())
+        findViewById<Button>(R.id.manageGoogleCalendar).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        googleCalendarButton.setOnClickListener {
+            googleCalendarResults.text = "Loading Google Calendar events…"
+            if (googleCalendarRange == null) googleCalendarRange = mapOf(
+                "timeMin" to java.time.Instant.now().minusSeconds(7 * 86_400).toString(),
+                "timeMax" to java.time.Instant.now().plusSeconds(31 * 86_400).toString(),
+            )
+            val range = googleCalendarRange!!
+            val cursorForRequest = if (restartCalendarFromBeginning) null else googleCalendarCursor
+            val query = range.entries.joinToString("&") { "${java.net.URLEncoder.encode(it.key, "UTF-8")}=${java.net.URLEncoder.encode(it.value, "UTF-8")}" } + (cursorForRequest?.let { "&cursor=${java.net.URLEncoder.encode(it, "UTF-8")}" } ?: "")
+            GoogleWorkerClient.async(this, "GET", GoogleWorkerClient.path("calendar", "/events?$query")) { result, error ->
+                    val workerError = error as? GoogleWorkerClient.GoogleWorkerException
+                    val page = result ?: workerError?.payload?.takeIf { it.containsKey("calendars") }
+                    if (page == null) {
+                        if (workerError?.code == "INVALID_PAGE_CURSOR") {
+                            googleCalendarCursor = null
+                            restartCalendarFromBeginning = true
+                            googleCalendarButton.text = "Refresh from beginning"
+                            googleCalendarResults.text = "This continuation expired or is invalid. Loaded events are preserved; refresh to restart."
+                            return@async
+                        }
+                        googleCalendarResults.text = when {
+                            workerError?.status == 401 -> "Overseer sign-in expired. Sign in again to load Google events."
+                            workerError != null && GoogleWorkerClient.cursorRecovery(workerError) == GoogleWorkerClient.CursorRecovery.RESTART_FROM_BEGINNING -> {
+                                googleCalendarCursor = null
+                                restartCalendarFromBeginning = true
+                                googleCalendarButton.text = "Refresh from beginning"
+                                "${workerError.message} Loaded events are preserved; refresh from the beginning after reconnecting."
+                            }
+                            workerError != null -> workerError.message
+                            else -> "Google events unavailable because of a network error. Retry when connected."
+                        }
+                        return@async
+                    }
+                    val calendars = page["calendars"] as? List<*> ?: emptyList<Any>()
+                    val lines = calendars.flatMap { rawCalendar ->
+                        val calendar = rawCalendar as? Map<*, *> ?: return@flatMap emptyList()
+                        val calendarId = calendar["calendarId"] as? String ?: "calendar"
+                        val name = calendar["calendarName"] as? String ?: "Google Calendar"
+                        val events = calendar["events"] as? List<*> ?: emptyList<Any>()
+                        events.mapNotNull { rawEvent ->
+                            val event = rawEvent as? Map<*, *> ?: return@mapNotNull null
+                            val title = event["summary"] as? String ?: "Untitled Google event"
+                            val start = event["start"] as? Map<*, *>
+                            val startValue = (start?.get("dateTime") as? String) ?: (start?.get("date") as? String) ?: "Time not provided"
+                            val displayTime = runCatching {
+                                java.time.ZonedDateTime.parse(startValue).format(DateTimeFormatter.ofPattern("MMM d, h:mm a z", Locale.getDefault()))
+                            }.recoverCatching {
+                                val local = java.time.LocalDateTime.parse(startValue)
+                                val zone = java.time.ZoneId.of(start?.get("timeZone") as? String ?: java.time.ZoneId.systemDefault().id)
+                                local.atZone(zone).format(DateTimeFormatter.ofPattern("MMM d, h:mm a z", Locale.getDefault()))
+                            }.getOrDefault(startValue)
+                            val eventId = event["id"] as? String ?: "$title:$startValue"
+                            "$calendarId:$eventId" to "Google · $name\n$title · $displayTime"
+                        }
+                    }
+                    lines.forEach { (id, line) -> googleEvents[id] = line }
+                    val pagination = page["pagination"] as? Map<*, *>
+                    val pageError = page["error"] as? Map<*, *>
+                    val errorCode = (pageError?.get("code") as? String) ?: workerError?.code
+                    val errorMessage = (pageError?.get("message") as? String) ?: workerError?.message
+                    googleCalendarCursor = pagination?.get("nextCursor") as? String
+                    if (errorCode == "INVALID_PAGE_CURSOR") {
+                        googleCalendarCursor = null
+                        restartCalendarFromBeginning = true
+                        googleCalendarButton.text = "Refresh from beginning"
+                    } else if (pageError?.get("retryable") == false && googleCalendarCursor != null) {
+                        restartCalendarFromBeginning = false
+                        googleCalendarButton.text = "Continue past failed page"
+                    } else if (pageError?.get("retryable") == false || (workerError != null && GoogleWorkerClient.cursorRecovery(workerError) == GoogleWorkerClient.CursorRecovery.RESTART_FROM_BEGINNING)) {
+                        googleCalendarCursor = null
+                        restartCalendarFromBeginning = true
+                        googleCalendarButton.text = "Refresh from beginning"
+                    } else {
+                        restartCalendarFromBeginning = false
+                        googleCalendarButton.text = if (googleCalendarCursor == null) "Refresh Google events" else "Load more Google events"
+                        if (googleCalendarCursor == null && workerError == null && pageError == null) googleCalendarRange = null
+                    }
+                    val listing = if (googleEvents.isEmpty()) "No Google events have loaded yet." else googleEvents.values.take(50).joinToString("\n\n")
+                    googleCalendarResults.text = when {
+                        errorCode == "INVALID_PAGE_CURSOR" -> "$listing\n\nThis continuation expired or is invalid. Loaded events are preserved; refresh to restart."
+                        errorMessage != null && pageError?.get("retryable") == true -> "$listing\n\n$errorMessage"
+                        errorMessage != null -> "$listing\n\n$errorMessage Refresh from the beginning after reconnecting or correcting the request."
+                        googleCalendarCursor != null -> "$listing\n\nMore events are available. Tap Load more."
+                        googleEvents.isEmpty() -> "No Google events found in this date range."
+                        else -> listing
+                    }
+                }
+        }
         eventListener = repository.observeCollection(
             "events",
             decoder = { id, data -> CanonicalCodecs.decodeScheduleEvent(id, data) },

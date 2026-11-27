@@ -16,3 +16,13 @@ export {
   reconcileCourseDeletionJobsSchedule,
 } from './course-deletion-worker.js'
 export * from './job-models.js'
+export {
+  beginGoogleAuthorization,
+  googleOAuthCallback,
+  getGoogleIntegrationStatus,
+  getGoogleCalendarEvents,
+  getGoogleClassroomData,
+  disconnectGoogleIntegration,
+  beginNativeGoogleAuthorization,
+  completeNativeGoogleAuthorization,
+} from './google-integrations.js'

@@ -1,0 +1,23 @@
+name = "overseer-google-integrations"
+main = "src/index.ts"
+compatibility_date = "2026-11-24"
+
+[vars]
+FIREBASE_PROJECT_ID = "overseer-f970c"
+GOOGLE_WEB_CLIENT_ID = "460542148335-7dg90m6j69ob6nj6irkusp8a6og2vgvt.apps.googleusercontent.com"
+GOOGLE_ANDROID_CLIENT_ID = "460542148335-fpvn34e9jsocrbbinu0sdn57ionohp91.apps.googleusercontent.com"
+GOOGLE_ANDROID_REDIRECT_URI = "https://overseer-google-integrations.bongalos-justinejaeg8.workers.dev/oauth/android"
+GOOGLE_WEB_CALLBACK_URL = "https://overseer-google-integrations.bongalos-justinejaeg8.workers.dev/oauth/callback"
+ALLOWED_ORIGINS = "http://localhost:5173"
+GOOGLE_WEB_RETURN_ORIGINS = "http://localhost:5173"
+TOKEN_ENCRYPTION_CURRENT_VERSION = "v1"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "overseer-google-integrations"
+database_id = "8343b983-652c-4686-a4c6-139e69303760"
+migrations_dir = "migrations"
+
+[observability.logs]
+enabled = true
+invocation_logs = true
