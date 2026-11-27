@@ -335,7 +335,14 @@ body { font-family: var(--font-sans); font-size: var(--text-base); line-height: 
 .app-header { border-color: var(--border); background: color-mix(in srgb, var(--background) 96%, transparent); }
 .card, .auth-card, .command-dialog { border-color: var(--border); background-color: var(--surface); border-radius: 16px; box-shadow: var(--shadow-card); }
 .button, .filter-chip, .week-day, .profile-avatar, .icon-button { border-radius: 9px; }
-.brand__word, .app-header h1, .dashboard-welcome-row h2, .workspace-page h2, .workspace-page h3 { color: var(--text-primary); font-family: var(--font-display); }
+.brand__word, .app-header h1, .dashboard-welcome-row h2, .workspace-page h2, .workspace-page h3 {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+
+.sidebar .brand__word {
+  color: var(--primary-foreground);
+}
 .nav-group__title { color: color-mix(in srgb, white 70%, var(--navy)); }
 .nav-link--active, .nav-link--active:hover { background: rgb(255 255 255 / 13%); }
 .nav-link--active::before { background-color: var(--accent-color); }

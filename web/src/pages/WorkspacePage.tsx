@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactElement } from 'react'
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, FileUp, Flame, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, FileUp, Flame, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useReducedMotion } from 'motion/react'
 import { useAppData } from '../app/AppDataContext'
@@ -392,7 +392,7 @@ function FocusPage() {
         <Card className="focus-stat-card" padding="medium"><p className="eyebrow">FOCUS TIME THIS WEEK</p><strong>{durationLabel(weeklySeconds)}</strong><small>{data.focusSessions.filter((session) => session.mode === 'focus').length} completed focus sessions total</small></Card>
         <div className="history-card">
           <SectionHeading title="Session history" detail="Completed sessions saved on this device" />
-          <Card className="history-list" padding="small">{sessions.map((session) => <div className="history-row" key={session.id}><span className="history-icon"><Clock3 size={16} /></span><div><strong>{modeLabels[session.mode]}</strong><small>{courseName(data.courses, session.courseId)}{session.taskId ? ` · ${data.tasks.find((task) => task.id === session.taskId)?.title ?? 'Task'}` : ''}</small></div><span>{durationLabel(session.durationSeconds)}</span><time>{new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(session.endedAt))}</time></div>)}{sessions.length === 0 && empty('Your completed focus and break sessions will appear here.')}</Card>
+          <Card className="history-list" padding="small">{sessions.map((session) => <div className="history-row" key={session.id}><div><strong>{modeLabels[session.mode]}</strong><small>{courseName(data.courses, session.courseId)}{session.taskId ? ` · ${data.tasks.find((task) => task.id === session.taskId)?.title ?? 'Task'}` : ''}</small></div><span>{durationLabel(session.durationSeconds)}</span><time>{new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(session.endedAt))}</time></div>)}{sessions.length === 0 && empty('Your completed focus and break sessions will appear here.')}</Card>
         </div>
       </div>
     </div>
@@ -574,11 +574,11 @@ function SettingsPage() {
 }
 
 function AssistantPage() {
-  return <div className="workspace-page"><Card className="assistant-notice" padding="large"><span className="assistant-icon"><BookOpen size={22} /></span><p className="eyebrow">STUDY ASSISTANT</p><h2>Study assistant is planned for the AI integration phase.</h2><p>AI features are not connected yet. This page does not generate answers or simulate an assistant. You can keep organizing courses, lessons, materials, and tasks in your local study library.</p><Link className="button button--secondary button--medium" to="/library">Open study library <ArrowRight size={15} /></Link></Card></div>
+  return <div className="workspace-page"><Card className="assistant-notice" padding="large"><span className="assistant-icon"><Sparkles size={22} /></span><p className="eyebrow">STUDY ASSISTANT</p><h2>Study assistant is planned for the AI integration phase.</h2><p>AI features are not connected yet. This page does not generate answers or simulate an assistant. You can keep organizing courses, lessons, materials, and tasks in your local study library.</p><Link className="button button--secondary button--medium" to="/library">Open study library <ArrowRight size={15} /></Link></Card></div>
 }
 
 function NotFound({ message = 'Try heading back to your workspace.' }: { message?: string }) {
-  return <div className="placeholder-page"><span className="placeholder-icon"><BookOpen size={22} /></span><p className="eyebrow">NOT FOUND</p><h2>We couldn’t find that page.</h2><p>{message}</p><Link className="button button--secondary" to="/dashboard">Go to dashboard <ArrowRight size={15} /></Link></div>
+  return <div className="placeholder-page"><span className="placeholder-icon"><Sparkles size={22} /></span><p className="eyebrow">NOT FOUND</p><h2>We couldn’t find that page.</h2><p>{message}</p><Link className="button button--secondary" to="/dashboard">Go to dashboard <ArrowRight size={15} /></Link></div>
 }
 
 export default function WorkspacePage({ page }: { page: PageKey }) {

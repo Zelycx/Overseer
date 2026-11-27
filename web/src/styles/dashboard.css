@@ -445,3 +445,21 @@
   outline-offset: 4px;
   border-radius: 4px;
 }
+
+.recent-activities-card .activity-row {
+  flex-shrink: 0;
+}
+
+/* Focus and Recent Activities card alignment */
+.focus-summary-card,
+.recent-activities-card {
+  height: 100%;
+  min-height: 215px;
+  box-sizing: border-box;
+}
+
+.recent-activities-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

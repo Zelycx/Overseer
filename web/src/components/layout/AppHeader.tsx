@@ -30,9 +30,10 @@ function useOnlineStatus() {
 export default function AppHeader({ onMenuClick, onCommandClick, menuOpen }: AppHeaderProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { signOut, actionInProgress } = useAuth()
+  const { user, signOut, actionInProgress } = useAuth()
   const { data } = useAppData()
   const online = useOnlineStatus()
+  const displayName = user?.displayName?.trim() || data.preferences.displayName?.trim() || ''
   const shortcutLabel = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'
   const detail = pageDetails[pathname] ?? (pathname.startsWith('/courses/')
     ? { title: 'Course details', eyebrow: 'Your study library' }
@@ -69,8 +70,8 @@ export default function AppHeader({ onMenuClick, onCommandClick, menuOpen }: App
         </div>
 
         <Link to="/settings" className="profile-button" aria-label="Open settings">
-          <span className="profile-avatar">{data.preferences.displayName ? data.preferences.displayName.trim().slice(0, 2).toUpperCase() : <CircleUserRound size={17} aria-hidden="true" />}</span>
-          <span className="profile-name">{data.preferences.displayName || 'Settings'}</span>
+                <span className="profile-avatar">{displayName ? displayName.slice(0, 2).toUpperCase() : <CircleUserRound size={17} aria-hidden="true" />}</span>
+          <span className="profile-name">{displayName || 'Settings'}</span>
         </Link>
         <button className="icon-button" type="button" onClick={() => void handleSignOut()} disabled={actionInProgress} aria-label="Sign out" title="Sign out">
           <LogOut size={17} />

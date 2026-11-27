@@ -1,7 +1,8 @@
-import { ArrowRight, BookOpen, CalendarDays, Clock3, Flame, ListChecks, MoreHorizontal, Plus, Sparkles, Target } from 'lucide-react'
+import { BookOpen, CalendarDays, Clock3, Flame, ListChecks, MoreHorizontal, NotebookPen, Plus, Sparkles, Target } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { useAppData } from '../app/AppDataContext'
+import { useAuth } from '../app/AuthContext'
 import { addDays, durationLabel, eventOccursOnDate, formatDate, formatTime, localDateKey, startOfWeek } from '../data/dates'
 import Badge from '../components/ui/Badge'
 import { ButtonLink } from '../components/ui/Button'
@@ -11,6 +12,8 @@ import SectionHeading from '../components/ui/SectionHeading'
 
 export default function DashboardPage() {
   const { data, update } = useAppData()
+  const { user } = useAuth()
+  const displayName = user?.displayName?.trim() || data.preferences.displayName?.trim() || ''
   const today = localDateKey()
   const now = new Date()
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening'
@@ -58,13 +61,13 @@ return (
       <div>
         <p className="dashboard-date">{formatDate(today)}</p>
         <h2>
-          {greeting}{data.preferences.displayName && `, ${data.preferences.displayName}`}{' '}
+          {greeting}{displayName && `, ${displayName}`}{' '}
           <span className="greeting-star">✳</span>
         </h2>
         <p className="dashboard-subtitle">Here’s a little space to make progress.</p>
       </div>
       <ButtonLink to="/day-planner" variant="secondary">
-        <Sparkles size={16} /> Plan my day
+        <NotebookPen size={16} /> Plan my day
       </ButtonLink>
     </div>
 
@@ -93,7 +96,7 @@ return (
               </div>
               {upcoming[0]?.id === event.id && <Badge tone="soft">UP NEXT</Badge>}
             </div>
-          )) : <p className="empty-copy">Nothing scheduled today. Add an event when you’re ready.</p>}
+          )) : <p className="empty-copy">Nothing scheduled today. Click the icon to add an event.</p>}
         </Card>
         </Link>
       </section>
@@ -135,7 +138,7 @@ return (
           ))}
     {pending.length === 0 && (
   <p className="empty-copy">
-    You’re all caught up. Add a task when the next one comes along.
+    You’re all caught up. Click the icon to add a task.
   </p>
 )}
         </Card>
@@ -169,7 +172,7 @@ return (
             </div>
           ))}
           {upcomingEvents.length === 0 && (
-            <p className="empty-copy">No upcoming events are scheduled. Add one from your schedule.</p>
+            <p className="empty-copy">No upcoming events are scheduled. Click the icon to add one from your schedule.</p>
           )}
         </Card>
         </Link>
@@ -215,7 +218,7 @@ return (
   <Link to="/library" className="dashboard-card-link">
     <Card padding="small">
       <div className="empty-tasks-content">
-        <p className="empty-copy">Create your first course in the study library.</p>
+        <p className="empty-copy">Create your first course in the study library by clicking the icon.</p>
         <Link to="/assistant" className="callout-icon" aria-label="Open study assistant">
           <Sparkles size={24} />
         </Link>
@@ -232,7 +235,7 @@ return (
         <SectionHeading
   title="Focus"
   icon={
-<Link to="/focus?start=1" className="section-heading__icon-link" aria-label="Start focus session">      <Flame size={20} />
+<Link to="/focus?start=1" className="section-heading__icon-link" aria-label="Start focus session">      <Clock3 size={20} />
     </Link>
   }
 />
@@ -273,10 +276,10 @@ return (
 
       <section className="dashboard-section">
         <SectionHeading
-          title="Recent learning activity"
+          title="Recent activities"
         />
 <Link to="/progress" className="dashboard-card-link">
-  <Card padding="small">          {recent.length ? recent.map((item, index) => (
+  <Card className="recent-activities-card" padding="large">         {recent.length ? recent.map((item, index) => (
             <div className="activity-row" key={`${item.at}-${index}`}>
               <span className="activity-dot" />
               <span>

@@ -5,6 +5,7 @@ import {
   Focus,
   Sparkles,
   LayoutDashboard,
+  Clock3,
   ListTodo,
   NotebookPen,
   Settings,
@@ -33,7 +34,7 @@ export const workspaceNavigation: NavigationItem[] = [
 ]
 
 export const settingsNavigation: NavigationItem[] = [
-{ label: 'Focus', to: '/focus', icon: Focus },
+{ label: 'Focus', to: '/focus', icon: Clock3 },
   { label: 'Progress', to: '/progress', icon: ChartNoAxesCombined },
 ]
 
